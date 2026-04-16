@@ -1782,7 +1782,8 @@ ${pageText ? pageText.slice(0, 12000) : '（未入力）'}
 重要:
 - name_jpは必ずメンズアパレルらしい魅力的な日本語名にしてください
 - size_tableはテキストに数値が含まれていれば抽出、なければ空配列
-- colorsとsizes_cnはテキストから最大限抽出してください`;
+- colorsは必ず{cn:中国語名, jp:日本語カタカナ名}の配列にしてください
+- sizes_cnとcolorsはテキストから最大限抽出してください`;
 
   try {
     const rawText = await callClaude([{ role: 'user', content: prompt }], 2000);
@@ -1882,10 +1883,15 @@ function renderAIResult(data) {
   if (data.price_cny > 0) document.getElementById('ai-cost').value = data.price_cny;
   document.getElementById('ai-memo').value = data.description || '';
 
-  // カラー
+  // カラー（中国語＋日本語）
   const colorsEl = document.getElementById('ai-colors');
   colorsEl.innerHTML = data.colors?.length > 0
-    ? data.colors.map(c => '<span class="color-chip">🎨 ' + c + '</span>').join('')
+    ? data.colors.map(function(c) {
+        var cn = (typeof c === 'object') ? (c.cn || '') : c;
+        var jp = (typeof c === 'object') ? (c.jp || '') : '';
+        var label = cn + (jp && jp !== cn ? '<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:4px">/ ' + jp + '</span>' : '');
+        return '<span class="color-chip">🎨 ' + label + '</span>';
+      }).join('')
     : '<span style="color:var(--muted);font-size:12px">カラー情報が取得できませんでした</span>';
 
   // サイズ（中国サイズ + 日本換算）
@@ -1934,7 +1940,13 @@ async function registerAIProduct() {
   const url = document.getElementById('ai-url').value.trim();
 
   let fullMemo = memo;
-  if (aiProductData.colors?.length > 0) fullMemo += '\n【カラー】' + aiProductData.colors.join('、');
+  if (aiProductData.colors?.length > 0) {
+    var colorStrs = aiProductData.colors.map(function(c) {
+      if (typeof c === 'object') return (c.cn || '') + (c.jp && c.jp !== c.cn ? '|' + c.jp : '');
+      return c;
+    });
+    fullMemo += '\n【カラー】' + colorStrs.join('、');
+  }
   if (aiProductData.sizes_cn?.length > 0) fullMemo += '\n【サイズ】' + aiProductData.sizes_cn.join('、');
   if (aiProductData.size_table?.length > 0) {
     fullMemo += '\n【サイズ表】\n' + aiProductData.size_table.map(r =>
@@ -1973,7 +1985,11 @@ function renderProducts() {
     if (colors.length > 0) {
       colorHtml = '<div style="margin-bottom:6px;display:flex;gap:4px;flex-wrap:wrap">';
       colors.slice(0, 8).forEach(c => {
-        colorHtml += '<span class="product-tag" style="background:rgba(79,156,249,0.12);color:var(--accent)">🎨 ' + c + '</span>';
+        var parts = c.split('|');
+        var cnLabel = parts[0] || c;
+        var jpLabel = parts[1] || '';
+        var jpSuffix = jpLabel ? ' <span style="font-size:10px;opacity:0.75;margin-left:2px">/ ' + jpLabel + '</span>' : '';
+        colorHtml += '<span class="product-tag" style="background:rgba(79,156,249,0.12);color:var(--accent)">\u{1F3A8} ' + cnLabel + jpSuffix + '</span>';
       });
       if (colors.length > 8) colorHtml += '<span style="font-size:11px;color:var(--muted)">+' + (colors.length-8) + '色</span>';
       colorHtml += '</div>';
@@ -2523,7 +2539,12 @@ function showSizeTable(id) {
   var colorsEl = document.getElementById('sizetable-modal-colors');
   if (colors.length > 0) {
     var cHtml = '';
-    colors.forEach(function(c) { cHtml += '<span class="color-chip">\u{1F3A8} ' + c + '</span>'; });
+    colors.forEach(function(c) {
+      var parts = c.split('|');
+      var cnLabel = parts[0] || c;
+      var jpLabel = parts[1] || '';
+      cHtml += '<span class="color-chip">\u{1F3A8} ' + cnLabel + (jpLabel ? '<span style="font-size:10px;opacity:0.7;margin-left:4px">/ ' + jpLabel + '</span>' : '') + '</span>';
+    });
     colorsEl.innerHTML = cHtml;
     colorsEl.style.display = 'flex';
   } else {
