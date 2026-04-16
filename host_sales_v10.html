@@ -1731,7 +1731,7 @@ async function addProduct() {
 // ===== 商品管理 AI解析エンジン =====
 
 let aiProductData = {};
-let ocrSizeTable = null; // 画像OCRで取得したサイズ表
+let ocrSizeTable = null; // {tops:[], bottoms:[], unified:[]} または null
 let productImgBase64 = ''; // アップロードした商品画像のbase64
 
 function handleProductImgFile(input) {
@@ -1835,7 +1835,7 @@ async function runSizeImgOCR(btn) {
     var b64data = base64.split(',')[1];
     var mtype   = base64.split(';')[0].split(':')[1];
 
-    var prompt = 'これはアパレル商品のサイズ表画像です。セットアップ（上下別サイズ）の場合は上着と下着のサイズ表を両方抽出してください。\n\n以下のJSON形式のみで返してください（前後に何も書かない）:\n{\n  "tops": [{"size":"M","chest":"96","waist":"80","length":"68","shoulder":"44"}],\n  "bottoms": [{"size":"M","waist":"74","hip":"96","inseam":"73","rise":"27","thigh":"28"}],\n  "unified": [{"size":"M","chest":"96","waist":"80","length":"68","shoulder":"44"}]\n}\n\nルール:\n- セットアップ（上着・下着が別）の場合は tops と bottoms に分けて入れる\n- 単体商品（ジャケット・パンツなど）は unified のみ使用、tops/bottoms は空配列\n- 項目名は英語: size, chest(胸囲), waist(ウエスト/ウエスト), length(着丈/全長), shoulder(肩幅), hip(ヒップ/股上), sleeve(袖丈), inseam(股下), thigh(太腿幅), rise(股上)\n- 数値のみ（単位なし）。存在しない項目は省略';
+    var prompt = 'アパレル商品のサイズ表画像です。画像内の全サイズ表を正確に読み取ってください。\n\n【重要】上着と下着でサイズ表が分かれている場合（セットアップ/スーツ上下など）は必ず別々に抽出してください。\n上着の列名例：衣长/着丈、胸围/胸囲、肩宽/肩幅、袖长/袖丈、袖口\n下着の列名例：裤长/丈、腰围/ウエスト、臀围/ヒップ、裤口/裾幅、大腿/太腿\n\n以下のJSON形式のみで返してください（前後に何も書かない）:\n{\n  "tops": [{"size":"M","length":"55.5","chest":"116","shoulder":"48","sleeve":"62","cuff":"29"}],\n  "bottoms": [{"size":"M","pants_length":"108","hip":"102","waist":"80","hem":"63"}],\n  "unified": []\n}\n\nルール:\n- 上着と下着でテーブルが分かれている → tops と bottoms に分けて、unified は空配列\n- ジャケット単体・パンツ単体など1種類のみ → unified のみ、tops/bottoms は空配列\n- 項目名は画像の列名をそのまま英語キーに変換: length(衣长/着丈), chest(胸围/胸囲), shoulder(肩宽/肩幅), sleeve(袖长/袖丈), cuff(袖口), pants_length(裤长/丈), waist(腰围/ウエスト), hip(臀围/ヒップ), hem(裤口/裾幅), thigh(大腿/太腿)\n- 数値のみ（単位・記号なし）。その列が存在しない場合はキーを省略';
 
     var text = await callClaude([{
       role: 'user',
@@ -1849,24 +1849,23 @@ async function runSizeImgOCR(btn) {
     if (!match) throw new Error('サイズ表データが読み取れませんでした');
     var parsed = JSON.parse(match[0]);
 
-    // ocrSizeTable に統合（既存データとマージ）
-    var newRows = [];
-    if (parsed.tops && parsed.tops.length > 0) {
-      parsed.tops.forEach(function(r) { newRows.push(Object.assign({part:'上'}, r)); });
-    }
-    if (parsed.bottoms && parsed.bottoms.length > 0) {
-      parsed.bottoms.forEach(function(r) { newRows.push(Object.assign({part:'下'}, r)); });
-    }
-    if (parsed.unified && parsed.unified.length > 0) {
-      newRows = newRows.concat(parsed.unified);
-    }
-    if (newRows.length === 0) throw new Error('サイズデータが見つかりませんでした');
+    // ocrSizeTable に構造体のままマージ
+    var tops    = parsed.tops    || [];
+    var bottoms = parsed.bottoms || [];
+    var unified = parsed.unified || [];
+    var total   = tops.length + bottoms.length + unified.length;
+    if (total === 0) throw new Error('サイズデータが見つかりませんでした');
 
-    // 既存データとマージ
-    if (!ocrSizeTable) ocrSizeTable = [];
-    ocrSizeTable = ocrSizeTable.concat(newRows);
+    if (!ocrSizeTable) ocrSizeTable = { tops: [], bottoms: [], unified: [] };
+    ocrSizeTable.tops    = ocrSizeTable.tops.concat(tops);
+    ocrSizeTable.bottoms = ocrSizeTable.bottoms.concat(bottoms);
+    ocrSizeTable.unified = ocrSizeTable.unified.concat(unified);
 
-    status.innerHTML = '<span style="color:var(--green)">✅ ' + newRows.length + '行読み取り済（累計' + ocrSizeTable.length + '行）。AI解析スタートで反映されます。</span>';
+    var desc = [];
+    if (tops.length)    desc.push('上着 ' + tops.length + '行');
+    if (bottoms.length) desc.push('下着 ' + bottoms.length + '行');
+    if (unified.length) desc.push(unified.length + '行');
+    status.innerHTML = '<span style="color:var(--green)">✅ ' + desc.join(' / ') + ' 読み取り完了。AI解析スタートで反映されます。</span>';
 
     // 解析結果が既に表示中なら即時更新
     if (document.getElementById('ai-result').style.display !== 'none') {
@@ -2120,50 +2119,79 @@ function renderAIResult(data) {
 
 function renderSizeTable(sizeTable) {
   var el = document.getElementById('ai-sizetable');
-  if (!sizeTable || sizeTable.length === 0) {
+  if (!sizeTable) {
     el.innerHTML = '<span style="color:var(--muted)">サイズ表が取得できませんでした。上の「🔍 読み取り」ボタンでサイズ表画像から読み取れます。</span>';
     return;
   }
-  var hasSetup = sizeTable.some(function(r) { return r.part === '上' || r.part === '下'; });
-  var allCols = [];
-  sizeTable.forEach(function(r) {
-    Object.keys(r).forEach(function(k) {
-      if (k !== 'size' && k !== 'part' && allCols.indexOf(k) === -1) allCols.push(k);
-    });
-  });
-  var colLabels = { chest:'胸囲(cm)', waist:'ウエスト(cm)', length:'着丈(cm)', shoulder:'肩幅(cm)', hip:'ヒップ(cm)', sleeve:'袖丈(cm)', inseam:'股下(cm)', thigh:'太腿(cm)', rise:'股上(cm)', width:'股幅(cm)' };
-  var html = '<table class="size-table" style="width:100%"><thead><tr>';
-  if (hasSetup) html += '<th>上/下</th>';
-  html += '<th>サイズ</th>';
-  allCols.forEach(function(c) { html += '<th>' + (colLabels[c] || c) + '</th>'; });
-  html += '</tr></thead><tbody>';
 
-  // セットアップの場合は上・下でグループ表示
-  if (hasSetup) {
-    ['上', '下', ''].forEach(function(part) {
-      var rows = sizeTable.filter(function(r) { return (r.part || '') === part; });
-      if (rows.length === 0) return;
-      if (part) {
-        html += '<tr><td colspan="' + (allCols.length + 2) + '" style="background:rgba(79,156,249,0.08);font-weight:700;font-size:11px;color:var(--accent);padding:4px 10px">'
-          + (part === '上' ? '🧥 上着' : '👖 下着') + '</td></tr>';
-      }
-      rows.forEach(function(row) {
-        html += '<tr>';
-        if (hasSetup) html += '<td style="color:var(--muted);font-size:11px">' + (row.part || '-') + '</td>';
-        html += '<td style="font-weight:700;color:var(--accent)">' + (row.size || '-') + '</td>';
-        allCols.forEach(function(c) { html += '<td>' + (row[c] || '-') + '</td>'; });
-        html += '</tr>';
+  // 構造体形式 {tops, bottoms, unified} と旧来の配列形式の両対応
+  var tops, bottoms, unified;
+  if (Array.isArray(sizeTable)) {
+    // 旧形式（配列）：part フィールドで振り分け
+    tops    = sizeTable.filter(function(r){ return r.part === '上'; });
+    bottoms = sizeTable.filter(function(r){ return r.part === '下'; });
+    unified = sizeTable.filter(function(r){ return !r.part; });
+  } else {
+    tops    = sizeTable.tops    || [];
+    bottoms = sizeTable.bottoms || [];
+    unified = sizeTable.unified || [];
+  }
+
+  var total = tops.length + bottoms.length + unified.length;
+  if (total === 0) {
+    el.innerHTML = '<span style="color:var(--muted)">サイズ表が取得できませんでした。</span>';
+    return;
+  }
+
+  var colLabels = {
+    size:'サイズ', length:'着丈(cm)', chest:'胸囲(cm)', shoulder:'肩幅(cm)',
+    sleeve:'袖丈(cm)', cuff:'袖口(cm)', waist:'ウエスト(cm)', hip:'ヒップ(cm)',
+    pants_length:'丈(cm)', hem:'裾幅(cm)', thigh:'太腿(cm)', inseam:'股下(cm)',
+    rise:'股上(cm)', width:'股幅(cm)'
+  };
+
+  function buildTable(rows, icon, label) {
+    if (!rows || rows.length === 0) return '';
+    // この行群が持つ列だけ抽出（size以外）
+    var cols = [];
+    rows.forEach(function(r) {
+      Object.keys(r).forEach(function(k) {
+        if (k !== 'size' && k !== 'part' && cols.indexOf(k) === -1) cols.push(k);
       });
     });
-  } else {
-    sizeTable.forEach(function(row) {
-      html += '<tr><td style="font-weight:700;color:var(--accent)">' + (row.size || '-') + '</td>';
-      allCols.forEach(function(c) { html += '<td>' + (row[c] || '-') + '</td>'; });
-      html += '</tr>';
+    var h = '';
+    if (icon) {
+      h += '<div style="font-size:12px;font-weight:700;color:var(--accent);padding:8px 0 6px;display:flex;align-items:center;gap:6px">'
+        + icon + ' ' + label + '</div>';
+    }
+    h += '<table class="size-table" style="width:100%;margin-bottom:12px"><thead><tr>';
+    h += '<th>サイズ</th>';
+    cols.forEach(function(c) { h += '<th>' + (colLabels[c] || c) + '</th>'; });
+    h += '</tr></thead><tbody>';
+    rows.forEach(function(row) {
+      h += '<tr><td style="font-weight:700;color:var(--accent)">' + (row.size || '-') + '</td>';
+      cols.forEach(function(c) { h += '<td>' + (row[c] !== undefined ? row[c] : '-') + '</td>'; });
+      h += '</tr>';
     });
+    h += '</tbody></table>';
+    return h;
   }
-  html += '</tbody></table>';
-  el.innerHTML = html;
+
+  var html = '';
+  var isSetup = tops.length > 0 && bottoms.length > 0;
+
+  if (isSetup) {
+    html += buildTable(tops,    '🧥', '上着');
+    html += buildTable(bottoms, '👖', '下着');
+  } else if (unified.length > 0) {
+    html += buildTable(unified, '', '');
+  } else if (tops.length > 0) {
+    html += buildTable(tops, '🧥', '上着');
+  } else if (bottoms.length > 0) {
+    html += buildTable(bottoms, '👖', '下着');
+  }
+
+  el.innerHTML = html || '<span style="color:var(--muted)">サイズ表データなし</span>';
 }
 
 
@@ -2185,10 +2213,21 @@ async function registerAIProduct() {
     fullMemo += '\n【カラー】' + colorStrs.join('、');
   }
   if (aiProductData.sizes_cn?.length > 0) fullMemo += '\n【サイズ】' + aiProductData.sizes_cn.join('、');
-  if (aiProductData.size_table?.length > 0) {
-    fullMemo += '\n【サイズ表】\n' + aiProductData.size_table.map(r =>
-      Object.entries(r).map(([k,v]) => k + ':' + v).join(' ')
-    ).join('\n');
+  if (aiProductData.size_table) {
+    var st = aiProductData.size_table;
+    var rows = [];
+    if (Array.isArray(st)) {
+      rows = st;
+    } else {
+      (st.tops||[]).forEach(function(r){ rows.push(Object.assign({part:'上'},r)); });
+      (st.bottoms||[]).forEach(function(r){ rows.push(Object.assign({part:'下'},r)); });
+      (st.unified||[]).forEach(function(r){ rows.push(r); });
+    }
+    if (rows.length > 0) {
+      fullMemo += '\n【サイズ表】\n' + rows.map(function(r){
+        return Object.entries(r).map(function(e){ return e[0]+':'+e[1]; }).join(' ');
+      }).join('\n');
+    }
   }
 
   const id = state.nextId++;
@@ -2886,30 +2925,33 @@ function showSizeTable(id) {
   var tableEl = document.getElementById('sizetable-modal-content');
   var tableMatch = p.memo ? p.memo.match(/\u3010\u30B5\u30A4\u30BA\u8868\u3011\n([\s\S]*?)(?:\n\n|\n【|$)/) : null;
   if (tableMatch) {
-    var rows = tableMatch[1].trim().split('\n').map(function(line) {
+    var rawRows = tableMatch[1].trim().split('\n').map(function(line) {
       var obj = {};
       line.split(' ').forEach(function(pair) {
-        var parts = pair.split(':');
-        if (parts.length === 2) obj[parts[0]] = parts[1];
+        var kv = pair.split(':');
+        if (kv.length === 2) obj[kv[0]] = kv[1];
       });
       return obj;
     }).filter(function(r) { return Object.keys(r).length > 0; });
+    // tops/bottoms/unified に振り分け
+    var topsRows    = rawRows.filter(function(r){ return r.part === '上'; });
+    var bottomsRows = rawRows.filter(function(r){ return r.part === '下'; });
+    var unifiedRows = rawRows.filter(function(r){ return !r.part; });
+    var rows = { tops: topsRows, bottoms: bottomsRows, unified: unifiedRows };
 
-    if (rows.length > 0) {
-      var colLabels = { size:'\u30B5\u30A4\u30BA', chest:'\u80F8\u56F2(cm)', waist:'\u30A6\u30A8\u30B9\u30C8(cm)', length:'\u7740\u4E08(cm)', shoulder:'\u80A9\u5E45(cm)', hip:'\u30D2\u30C3\u30D7/\u80A1\u4E0A(cm)', sleeve:'\u8896\u4E08(cm)', inseam:'\u80A1\u4E0B(cm)', thigh:'\u592A\u817F(cm)', width:'\u80A1\u5E45(cm)' };
-      var cols = Object.keys(rows[0]).filter(function(k) { return k !== 'size'; });
-      var tHtml = '<table class="size-table" style="width:100%"><thead><tr><th>\u30B5\u30A4\u30BA</th>';
-      cols.forEach(function(c) { tHtml += '<th>' + (colLabels[c] || c) + '</th>'; });
-      tHtml += '</tr></thead><tbody>';
-      rows.forEach(function(row) {
-        tHtml += '<tr><td style="font-weight:700;color:var(--accent)">' + (row.size || '-') + '</td>';
-        cols.forEach(function(c) { tHtml += '<td>' + (row[c] || '-') + '</td>'; });
-        tHtml += '</tr>';
-      });
-      tHtml += '</tbody></table>';
-      tableEl.innerHTML = tHtml;
+    var totalRows = rows.tops.length + rows.bottoms.length + rows.unified.length;
+    if (totalRows > 0) {
+      var tmpDiv = document.createElement("div");
+      tmpDiv.id = "ai-sizetable";
+      var origST = document.getElementById("ai-sizetable");
+      if (origST) origST.id = "ai-sizetable-backup";
+      document.body.appendChild(tmpDiv);
+      renderSizeTable(rows);
+      tableEl.innerHTML = tmpDiv.innerHTML;
+      document.body.removeChild(tmpDiv);
+      if (origST) origST.id = "ai-sizetable";
     } else {
-      tableEl.innerHTML = '<div style="color:var(--muted);font-size:13px">\u30B5\u30A4\u30BA\u8868\u30C7\u30FC\u30BF\u3092\u8AAD\u307F\u53D6\u308C\u307E\u305B\u3093\u3067\u3057\u305F</div>';
+      tableEl.innerHTML = '<div style="color:var(--muted);font-size:13px">サイズ表データを読み取れませんでした</div>';
     }
   } else {
     tableEl.innerHTML = '<div style="color:var(--muted);font-size:13px">\u30B5\u30A4\u30BA\u8868\u304C\u767B\u9332\u3055\u308C\u3066\u3044\u307E\u305B\u3093</div>';
