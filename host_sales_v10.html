@@ -453,16 +453,22 @@
           </div>
 
           <div style="margin-bottom:14px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-              <label style="display:flex;align-items:center;gap:8px;margin:0;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">
-                ③ サイズ表の画像URL <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none">(任意・画像サイズ表がある場合)</span>
-              </label>
-              <button onclick="addImgUrlField()" class="btn btn-sm btn-ghost" style="font-size:11px">＋ URL追加</button>
-            </div>
-            <div id="img-url-fields">
-              <div style="display:flex;gap:6px;margin-bottom:6px">
-                <input class="img-url-input" placeholder="https://img.alicdn.com/.../size_chart.jpg" style="font-size:12px;flex:1">
-                <button onclick="runImgOCR(this)" class="btn btn-sm" style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px;white-space:nowrap">🔍 画像OCR</button>
+            <label style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">
+              ③ サイズ表画像
+              <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none">任意・複数枚OK（上下セットアップも対応）</span>
+              <button onclick="addSizeImgSlot()" class="btn btn-sm btn-ghost" style="font-size:11px;margin-left:auto">＋ 画像を追加</button>
+            </label>
+            <div id="size-img-slots">
+              <div class="size-img-slot" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+                <div class="size-img-drop" onclick="triggerSizeImgInput(this)" ondragover="event.preventDefault();this.style.borderColor='var(--accent2)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleSizeImgDrop(event,this)" style="width:72px;height:72px;border:2px dashed var(--border);border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;overflow:hidden;font-size:22px;color:var(--muted);transition:border-color 0.15s">📐</div>
+                <input type="file" accept="image/*" style="display:none" onchange="handleSizeImgFileInput(this)">
+                <div style="flex:1">
+                  <div class="size-img-label" style="font-size:12px;color:var(--muted)">クリックまたはドロップで画像をアップロード</div>
+                  <div style="display:flex;gap:6px;margin-top:6px">
+                    <button onclick="runSizeImgOCR(this)" class="btn btn-sm" style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px">🔍 読み取り</button>
+                    <button onclick="removeSizeImgSlot(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button>
+                  </div>
+                </div>
               </div>
             </div>
             <div id="img-ocr-status" style="font-size:11px;color:var(--muted);min-height:16px"></div>
@@ -1758,57 +1764,124 @@ function clearProductImg() {
   document.getElementById('ai-img-file').value = '';
 }
 
-// ---- 画像URLフィールド追加 ----
-function addImgUrlField() {
-  const container = document.getElementById('img-url-fields');
-  const div = document.createElement('div');
-  div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
-  div.innerHTML = '<input class="img-url-input" placeholder="https://img.alicdn.com/.../size_chart.jpg" style="font-size:12px;flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px">'
-    + '<button onclick="runImgOCR(this)" class="btn btn-sm" style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px;white-space:nowrap">🔍 画像OCR</button>'
-    + '<button onclick="this.parentElement.remove()" class="btn btn-sm btn-danger" style="font-size:11px">✕</button>';
+// ===== サイズ表画像アップロード =====
+var sizeImgDataList = []; // [{base64, name}]
+
+function addSizeImgSlot() {
+  var container = document.getElementById('size-img-slots');
+  var div = document.createElement('div');
+  div.className = 'size-img-slot';
+  div.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px';
+  div.innerHTML = '<div class="size-img-drop" onclick="triggerSizeImgInput(this)" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent2)\'" ondragleave="this.style.borderColor=\'var(--border)\'" ondrop="handleSizeImgDrop(event,this)" style="width:72px;height:72px;border:2px dashed var(--border);border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;overflow:hidden;font-size:22px;color:var(--muted);transition:border-color 0.15s">📐</div>'
+    + '<input type="file" accept="image/*" style="display:none" onchange="handleSizeImgFileInput(this)">'
+    + '<div style="flex:1"><div class="size-img-label" style="font-size:12px;color:var(--muted)">クリックまたはドロップで画像をアップロード</div>'
+    + '<div style="display:flex;gap:6px;margin-top:6px">'
+    + '<button onclick="runSizeImgOCR(this)" class="btn btn-sm" style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px">🔍 読み取り</button>'
+    + '<button onclick="removeSizeImgSlot(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button>'
+    + '</div></div>';
   container.appendChild(div);
 }
 
-// ---- 画像OCR（サイズ表画像 → テキスト） ----
-async function runImgOCR(btn) {
-  const input = btn.previousElementSibling;
-  const imgUrl = input?.value?.trim();
-  if (!imgUrl) { alert('画像URLを入力してください'); return; }
+function removeSizeImgSlot(btn) {
+  btn.closest('.size-img-slot').remove();
+}
 
-  const status = document.getElementById('img-ocr-status');
-  status.textContent = '⏳ 画像を解析中...';
+function triggerSizeImgInput(dropEl) {
+  dropEl.nextElementSibling.click();
+}
+
+function handleSizeImgFileInput(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var slot = input.closest('.size-img-slot');
+  loadSizeImgToSlot(file, slot);
+}
+
+function handleSizeImgDrop(e, dropEl) {
+  e.preventDefault();
+  dropEl.style.borderColor = 'var(--border)';
+  var file = e.dataTransfer.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  var slot = dropEl.closest('.size-img-slot');
+  loadSizeImgToSlot(file, slot);
+}
+
+function loadSizeImgToSlot(file, slot) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result;
+    var dropEl = slot.querySelector('.size-img-drop');
+    dropEl.innerHTML = '<img src="' + base64 + '" style="width:100%;height:100%;object-fit:cover">';
+    dropEl.dataset.base64 = base64;
+    var label = slot.querySelector('.size-img-label');
+    if (label) label.textContent = file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ---- サイズ表OCR（アップロード画像 → JSON） ----
+async function runSizeImgOCR(btn) {
+  var slot    = btn.closest('.size-img-slot');
+  var dropEl  = slot.querySelector('.size-img-drop');
+  var base64  = dropEl.dataset.base64;
+  var status  = document.getElementById('img-ocr-status');
+
+  if (!base64) { alert('先に画像をアップロードしてください'); return; }
+
+  status.innerHTML = '⏳ サイズ表を読み取り中...';
   btn.disabled = true;
 
   try {
-    const prompt = `これはアパレル商品のサイズ表画像です。表から全データを読み取り、以下のJSON配列のみで返してください（前後に何も書かない）:
-[{"size":"M","chest":"96","waist":"80","length":"68","shoulder":"44"},...]
-項目名は英語で: size, chest(胸囲), waist(ウエスト), length(着丈/全長), shoulder(肩幅), hip(ヒップ/股上), sleeve(袖丈), inseam(股下), thigh(太腿)
-存在しない項目は省略。数値のみ（単位なし）。`;
+    var b64data = base64.split(',')[1];
+    var mtype   = base64.split(';')[0].split(':')[1];
 
-    const text = await callClaude([{
+    var prompt = 'これはアパレル商品のサイズ表画像です。セットアップ（上下別サイズ）の場合は上着と下着のサイズ表を両方抽出してください。\n\n以下のJSON形式のみで返してください（前後に何も書かない）:\n{\n  "tops": [{"size":"M","chest":"96","waist":"80","length":"68","shoulder":"44"}],\n  "bottoms": [{"size":"M","waist":"74","hip":"96","inseam":"73","rise":"27","thigh":"28"}],\n  "unified": [{"size":"M","chest":"96","waist":"80","length":"68","shoulder":"44"}]\n}\n\nルール:\n- セットアップ（上着・下着が別）の場合は tops と bottoms に分けて入れる\n- 単体商品（ジャケット・パンツなど）は unified のみ使用、tops/bottoms は空配列\n- 項目名は英語: size, chest(胸囲), waist(ウエスト/ウエスト), length(着丈/全長), shoulder(肩幅), hip(ヒップ/股上), sleeve(袖丈), inseam(股下), thigh(太腿幅), rise(股上)\n- 数値のみ（単位なし）。存在しない項目は省略';
+
+    var text = await callClaude([{
       role: 'user',
       content: [
-        { type: 'image', source: { type: 'url', url: imgUrl } },
+        { type: 'image', source: { type: 'base64', media_type: mtype, data: b64data } },
         { type: 'text', text: prompt }
       ]
-    }], 1000);
-    const match = text.match(/\[[\s\S]*\]/);
+    }], 1500);
+
+    var match = text.match(/\{[\s\S]*\}/);
     if (!match) throw new Error('サイズ表データが読み取れませんでした');
+    var parsed = JSON.parse(match[0]);
 
-    ocrSizeTable = JSON.parse(match[0]);
-    status.innerHTML = '<span style="color:var(--green)">✅ ' + ocrSizeTable.length + '行のサイズ表を読み取りました。解析スタート後に反映されます。</span>';
+    // ocrSizeTable に統合（既存データとマージ）
+    var newRows = [];
+    if (parsed.tops && parsed.tops.length > 0) {
+      parsed.tops.forEach(function(r) { newRows.push(Object.assign({part:'上'}, r)); });
+    }
+    if (parsed.bottoms && parsed.bottoms.length > 0) {
+      parsed.bottoms.forEach(function(r) { newRows.push(Object.assign({part:'下'}, r)); });
+    }
+    if (parsed.unified && parsed.unified.length > 0) {
+      newRows = newRows.concat(parsed.unified);
+    }
+    if (newRows.length === 0) throw new Error('サイズデータが見つかりませんでした');
 
-    // 既に解析結果表示中なら即時更新
+    // 既存データとマージ
+    if (!ocrSizeTable) ocrSizeTable = [];
+    ocrSizeTable = ocrSizeTable.concat(newRows);
+
+    status.innerHTML = '<span style="color:var(--green)">✅ ' + newRows.length + '行読み取り済（累計' + ocrSizeTable.length + '行）。AI解析スタートで反映されます。</span>';
+
+    // 解析結果が既に表示中なら即時更新
     if (document.getElementById('ai-result').style.display !== 'none') {
       aiProductData.size_table = ocrSizeTable;
       renderSizeTable(ocrSizeTable);
     }
   } catch(e) {
-    status.innerHTML = '<span style="color:var(--red)">⚠️ OCR失敗: ' + e.message + '</span>';
+    status.innerHTML = '<span style="color:var(--red)">⚠️ 読み取り失敗: ' + e.message + '</span>';
   } finally {
     btn.disabled = false;
   }
 }
+
+// 後方互換（旧runImgOCR呼び出しがあった場合のフォールバック）
+function addImgUrlField() { addSizeImgSlot(); }
 
 function setAILoading(show, msg) {
   document.getElementById('ai-loading').style.display = show ? 'block' : 'none';
@@ -1840,6 +1913,7 @@ function resetAIPanel() {
   aiProductData = {};
   ocrSizeTable = null;
   clearProductImg();
+  document.getElementById("size-img-slots").innerHTML = '<div class="size-img-slot" style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><div class="size-img-drop" onclick="triggerSizeImgInput(this)" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent2)\'" ondragleave="this.style.borderColor=\'var(--border)\'" ondrop="handleSizeImgDrop(event,this)" style="width:72px;height:72px;border:2px dashed var(--border);border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;overflow:hidden;font-size:22px;color:var(--muted);transition:border-color 0.15s">📐</div><input type="file" accept="image/*" style="display:none" onchange="handleSizeImgFileInput(this)"><div style="flex:1"><div class="size-img-label" style="font-size:12px;color:var(--muted)">クリックまたはドロップで画像をアップロード</div><div style="display:flex;gap:6px;margin-top:6px"><button onclick="runSizeImgOCR(this)" class="btn btn-sm" style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px">🔍 読み取り</button><button onclick="removeSizeImgSlot(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button></div></div></div>';
 }
 
 // サイズ換算テーブル
@@ -2045,24 +2119,53 @@ function renderAIResult(data) {
 }
 
 function renderSizeTable(sizeTable) {
-  const el = document.getElementById('ai-sizetable');
+  var el = document.getElementById('ai-sizetable');
   if (!sizeTable || sizeTable.length === 0) {
-    el.innerHTML = '<span style="color:var(--muted)">サイズ表が取得できませんでした。上の「画像OCR」ボタンでサイズ表画像URLから読み取れます。</span>';
+    el.innerHTML = '<span style="color:var(--muted)">サイズ表が取得できませんでした。上の「🔍 読み取り」ボタンでサイズ表画像から読み取れます。</span>';
     return;
   }
-  const cols = Object.keys(sizeTable[0]).filter(k => k !== 'size');
-  const colLabels = { chest:'胸囲(cm)', waist:'ウエスト(cm)', length:'着丈(cm)', shoulder:'肩幅(cm)', hip:'ヒップ/股上(cm)', sleeve:'袖丈(cm)', inseam:'股下(cm)', thigh:'太腿(cm)', width:'股幅(cm)' };
-  let html = '<table class="size-table"><thead><tr><th>サイズ</th>';
-  cols.forEach(c => { html += '<th>' + (colLabels[c]||c) + '</th>'; });
-  html += '</tr></thead><tbody>';
-  sizeTable.forEach(row => {
-    html += '<tr><td style="font-weight:700;color:var(--accent)">' + (row.size||'-') + '</td>';
-    cols.forEach(c => { html += '<td>' + (row[c]||'-') + '</td>'; });
-    html += '</tr>';
+  var hasSetup = sizeTable.some(function(r) { return r.part === '上' || r.part === '下'; });
+  var allCols = [];
+  sizeTable.forEach(function(r) {
+    Object.keys(r).forEach(function(k) {
+      if (k !== 'size' && k !== 'part' && allCols.indexOf(k) === -1) allCols.push(k);
+    });
   });
+  var colLabels = { chest:'胸囲(cm)', waist:'ウエスト(cm)', length:'着丈(cm)', shoulder:'肩幅(cm)', hip:'ヒップ(cm)', sleeve:'袖丈(cm)', inseam:'股下(cm)', thigh:'太腿(cm)', rise:'股上(cm)', width:'股幅(cm)' };
+  var html = '<table class="size-table" style="width:100%"><thead><tr>';
+  if (hasSetup) html += '<th>上/下</th>';
+  html += '<th>サイズ</th>';
+  allCols.forEach(function(c) { html += '<th>' + (colLabels[c] || c) + '</th>'; });
+  html += '</tr></thead><tbody>';
+
+  // セットアップの場合は上・下でグループ表示
+  if (hasSetup) {
+    ['上', '下', ''].forEach(function(part) {
+      var rows = sizeTable.filter(function(r) { return (r.part || '') === part; });
+      if (rows.length === 0) return;
+      if (part) {
+        html += '<tr><td colspan="' + (allCols.length + 2) + '" style="background:rgba(79,156,249,0.08);font-weight:700;font-size:11px;color:var(--accent);padding:4px 10px">'
+          + (part === '上' ? '🧥 上着' : '👖 下着') + '</td></tr>';
+      }
+      rows.forEach(function(row) {
+        html += '<tr>';
+        if (hasSetup) html += '<td style="color:var(--muted);font-size:11px">' + (row.part || '-') + '</td>';
+        html += '<td style="font-weight:700;color:var(--accent)">' + (row.size || '-') + '</td>';
+        allCols.forEach(function(c) { html += '<td>' + (row[c] || '-') + '</td>'; });
+        html += '</tr>';
+      });
+    });
+  } else {
+    sizeTable.forEach(function(row) {
+      html += '<tr><td style="font-weight:700;color:var(--accent)">' + (row.size || '-') + '</td>';
+      allCols.forEach(function(c) { html += '<td>' + (row[c] || '-') + '</td>'; });
+      html += '</tr>';
+    });
+  }
   html += '</tbody></table>';
   el.innerHTML = html;
 }
+
 
 // ---- 商品登録 ----
 async function registerAIProduct() {
