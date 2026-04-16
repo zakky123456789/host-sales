@@ -980,6 +980,9 @@ let state = {
 
 // ===== ユーティリティ =====
 const fmt = n => Math.round(n).toLocaleString('ja-JP');
+function htmlEscape(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 const yen = n => '¥' + fmt(n);
 const cny = n => '¥' + Number(n).toFixed(2) + '元';
 
@@ -1035,17 +1038,17 @@ async function loadFromDB() {
     ]);
 
     if (shopsR.data?.length > 0) {
-      state.shops = shopsR.data.map(r => ({ id: r.id, name: r.name, zip: r.zip||'', address: r.address||'', tel: r.tel||'', memo: r.memo||'' }));
+      state.shops = shopsR.data.map(r => ({ id: Number(r.id), name: r.name, zip: r.zip||'', address: r.address||'', tel: r.tel||'', memo: r.memo||'' }));
     }
     if (hostsR.data?.length > 0) {
-      state.hosts = hostsR.data.map(r => ({ id: r.id, name: r.name, shopId: r.shop_id, deliveryAddress: r.delivery_address||'', zip: r.zip||'', tel: r.tel||'', memo: r.memo||'' }));
+      state.hosts = hostsR.data.map(r => ({ id: Number(r.id), name: r.name, shopId: r.shop_id, deliveryAddress: r.delivery_address||'', zip: r.zip||'', tel: r.tel||'', memo: r.memo||'' }));
     }
     if (productsR.data?.length > 0) {
-      state.products = productsR.data.map(r => ({ id: r.id, name: r.name, taobaoUrl: r.taobao_url||'', costCny: Number(r.cost_cny||0), priceJpy: Number(r.price_jpy||0), memo: r.memo||'', active: r.active!==false }));
+      state.products = productsR.data.map(r => ({ id: Number(r.id), name: r.name, taobaoUrl: r.taobao_url||'', costCny: Number(r.cost_cny||0), priceJpy: Number(r.price_jpy||0), memo: r.memo||'', active: r.active!==false }));
     }
     if (ordersR.data?.length > 0) {
       state.orders = ordersR.data.map(r => ({
-        id: r.id, hostId: r.host_id, productId: r.product_id,
+        id: Number(r.id), hostId: Number(r.host_id), productId: Number(r.product_id),
         qty: Number(r.qty||1), unitPriceJpy: Number(r.unit_price_jpy||0),
         receivedJpy: Number(r.received_jpy||0),
         orderDate: r.order_date||'', buckyOrdered: r.bucky_ordered||false,
@@ -1056,14 +1059,14 @@ async function loadFromDB() {
     }
     if (expensesR.data?.length > 0) {
       state.expenses = expensesR.data.map(r => ({
-        id: r.id, date: r.date, name: r.name, cat: r.cat||'その他',
+        id: Number(r.id), date: r.date, name: r.name, cat: r.cat||'その他',
         amount: Number(r.amount||0), tax: r.tax, method: r.method||'現金',
         payee: r.payee||'', note: r.note||'', y: r.y, m: r.m, settled: r.settled||false
       }));
     }
     if (revolutR.data?.length > 0) {
       state.revolut = revolutR.data.map(r => ({
-        id: r.id, date: r.date, jpyAmount: Number(r.jpy_amount||0),
+        id: Number(r.id), date: r.date, jpyAmount: Number(r.jpy_amount||0),
         cnyAmount: Number(r.cny_amount||0), source: r.source||'Revolut', note: r.note||'', y: r.y, m: r.m
       }));
     }
@@ -2062,8 +2065,8 @@ function renderProducts() {
         var parts = c.split('|');
         var cnLabel = parts[0] || c;
         var jpLabel = parts[1] || '';
-        var jpSuffix = jpLabel ? ' <span style="font-size:10px;opacity:0.75;margin-left:2px">/ ' + jpLabel + '</span>' : '';
-        colorHtml += '<span class="product-tag" style="background:rgba(79,156,249,0.12);color:var(--accent)">🎨 ' + cnLabel + jpSuffix + '</span>';
+        var jpSuffix = jpLabel ? ' <span style="font-size:10px;opacity:0.75;margin-left:2px">/ ' + htmlEscape(jpLabel) + '</span>' : '';
+        colorHtml += '<span class="product-tag" style="background:rgba(79,156,249,0.12);color:var(--accent)">🎨 ' + htmlEscape(cnLabel) + jpSuffix + '</span>';
       });
       if (colors.length > 8) colorHtml += '<span style="font-size:11px;color:var(--muted)">+' + (colors.length-8) + '色</span>';
       colorHtml += '</div>';
@@ -2075,7 +2078,7 @@ function renderProducts() {
       sizes.forEach(s => {
         const jpInfo = SIZE_CN_TO_JP[s.toUpperCase()] || SIZE_CN_TO_JP[s] || '';
         const jpS = jpInfo ? (jpInfo.split('JP:')[1] || '') : '';
-        sizeHtml += '<span class="product-tag" style="background:rgba(52,211,153,0.1);color:var(--green);font-family:var(--mono)">' + s + (jpS ? ' / JP:' + jpS : '') + '</span>';
+        sizeHtml += '<span class="product-tag" style="background:rgba(52,211,153,0.1);color:var(--green);font-family:var(--mono)">' + htmlEscape(s) + (jpS ? ' / JP:' + htmlEscape(jpS) : '') + '</span>';
       });
       sizeHtml += '</div>';
     }
@@ -2099,7 +2102,7 @@ function renderProducts() {
     html += '<div class="product-card">'
       + '<div>'
       + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">'
-      + '<strong style="font-size:14px">' + p.name + '</strong>'
+      + '<strong style="font-size:14px">' + htmlEscape(p.name) + '</strong>'
       + '<span class="badge ' + (p.active ? 'badge-green' : 'badge-gray') + '" style="font-size:10px">' + (p.active ? '販売中' : '停止') + '</span>'
       + sizetableBadge
       + '</div>'
