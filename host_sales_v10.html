@@ -829,6 +829,60 @@
       <button class="btn btn-primary" onclick="saveExpEdit()">保存する</button>
     </div>
   </div>
+
+<!-- 商品編集モーダル -->
+<div id="product-edit-modal" class="modal" onclick="if(event.target===this)closeProductEditModal()">
+  <div class="modal-box" style="max-width:640px">
+    <div class="modal-title">商品を編集</div>
+    <input type="hidden" id="pe-id">
+    <div class="form-grid form-grid-2" style="margin-bottom:14px">
+      <div class="form-group" style="grid-column:span 2"><label>商品名 <span style="color:var(--red)">*</span></label><input id="pe-name" placeholder="例：スリムフィット ストレートデニム"></div>
+    </div>
+    <div class="form-grid form-grid-2" style="margin-bottom:14px">
+      <div class="form-group"><label>仕入れ値（元）</label><input id="pe-cost" type="number" step="0.01" placeholder="例：85.00"></div>
+      <div class="form-group"><label>販売価格（円）</label><input id="pe-price" type="number" placeholder="例：4500"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px"><label>タオバオURL</label><input id="pe-url" placeholder="https://item.taobao.com/..."></div>
+    <div class="form-group" style="margin-bottom:14px"><label>カラー展開（カンマ区切り・例: 黒色|ブラック, 白色|ホワイト）</label><input id="pe-colors" placeholder="黒色|ブラック, 白色|ホワイト, 紺色|ネイビー"></div>
+    <div class="form-group" style="margin-bottom:14px"><label>サイズ展開（カンマ区切り・例: S, M, L, XL）</label><input id="pe-sizes" placeholder="S, M, L, XL, 2XL"></div>
+    <div class="form-group" style="margin-bottom:14px"><label>メモ・商品説明</label><textarea id="pe-memo" rows="3" placeholder="商品の特徴・素材など"></textarea></div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label>販売状態</label>
+      <select id="pe-active">
+        <option value="true">販売中</option>
+        <option value="false">停止</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-danger btn-sm" onclick="deleteProductFromModal()">削除</button>
+      <button class="btn btn-ghost" onclick="closeProductEditModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveProductEdit()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 店舗編集モーダル -->
+<div id="shop-edit-modal" class="modal" onclick="if(event.target===this)closeShopEditModal()">
+  <div class="modal-box">
+    <div class="modal-title">店舗を編集</div>
+    <input type="hidden" id="se-id">
+    <div class="form-grid form-grid-2" style="margin-bottom:14px">
+      <div class="form-group"><label>店舗名 <span style="color:var(--red)">*</span></label><input id="se-name"></div>
+      <div class="form-group"><label>電話番号</label><input id="se-tel" placeholder="03-xxxx-xxxx"></div>
+    </div>
+    <div class="form-grid form-grid-2" style="margin-bottom:14px">
+      <div class="form-group"><label>郵便番号</label><input id="se-zip" placeholder="例：160-0021"></div>
+      <div class="form-group"><label>住所</label><input id="se-address" placeholder="東京都新宿区歌舞伎町..."></div>
+    </div>
+    <div class="form-group" style="margin-bottom:20px"><label>メモ</label><input id="se-memo" placeholder="備考"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-danger btn-sm" onclick="deleteShopFromModal()">削除</button>
+      <button class="btn btn-ghost" onclick="closeShopEditModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveShopEdit()">保存する</button>
+    </div>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -1603,27 +1657,47 @@ function toggleShopBlock(id) {
 
 // 店舗編集モーダル（簡易版）
 function openShopEditModal(id) {
-  const s = getShop(id);
+  var s = getShop(id);
   if (!s) return;
-  const newName = prompt('店舗名', s.name);
-  if (newName === null) return;
-  const newZip = prompt('郵便番号', s.zip||'');
-  if (newZip === null) return;
-  const newAddr = prompt('住所', s.address||'');
-  if (newAddr === null) return;
-  const newTel = prompt('電話番号', s.tel||'');
-  if (newTel === null) return;
-  const idx = state.shops.findIndex(x => x.id === id);
+  document.getElementById('se-id').value = id;
+  document.getElementById('se-name').value = s.name || '';
+  document.getElementById('se-tel').value = s.tel || '';
+  document.getElementById('se-zip').value = s.zip || '';
+  document.getElementById('se-address').value = s.address || '';
+  document.getElementById('se-memo').value = s.memo || '';
+  document.getElementById('shop-edit-modal').classList.add('open');
+}
+function closeShopEditModal() { document.getElementById('shop-edit-modal').classList.remove('open'); }
+
+async function saveShopEdit() {
+  var id = parseInt(document.getElementById('se-id').value);
+  var name = document.getElementById('se-name').value.trim();
+  if (!name) { alert('店舗名を入力してください'); return; }
+  var tel  = document.getElementById('se-tel').value.trim();
+  var zip  = document.getElementById('se-zip').value.trim();
+  var addr = document.getElementById('se-address').value.trim();
+  var memo = document.getElementById('se-memo').value.trim();
+  var idx = state.shops.findIndex(function(x){ return x.id === id; });
   if (idx !== -1) {
-    state.shops[idx] = { ...state.shops[idx], name: newName.trim()||s.name, zip: newZip.trim(), address: newAddr.trim(), tel: newTel.trim() };
-    dbSave('shops', { id, name: state.shops[idx].name, zip: state.shops[idx].zip, address: state.shops[idx].address, tel: state.shops[idx].tel, memo: s.memo });
+    state.shops[idx] = { id: id, name: name, zip: zip, address: addr, tel: tel, memo: memo };
+    await dbSave('shops', { id: id, name: name, zip: zip, address: addr, tel: tel, memo: memo });
   }
+  closeShopEditModal();
+  renderAll();
+}
+
+async function deleteShopFromModal() {
+  var id = parseInt(document.getElementById('se-id').value);
+  if (!confirm('この店舗を削除しますか？')) return;
+  state.shops = state.shops.filter(function(s){ return s.id !== id; });
+  await dbDelete('shops', id);
+  closeShopEditModal();
   renderAll();
 }
 
 async function deleteShop(id) {
   if (!confirm('この店舗を削除しますか？')) return;
-  state.shops = state.shops.filter(s => s.id !== id);
+  state.shops = state.shops.filter(function(s){ return s.id !== id; });
   await dbDelete('shops', id);
   renderAll();
 }
@@ -2039,7 +2113,7 @@ function renderProducts() {
       + urlHtml
       + '</div>'
       + '<div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end">'
-      + '<button class="btn btn-sm btn-ghost" onclick="openProductEditInline(' + p.id + ')">編集</button>'
+      + '<button class="btn btn-sm btn-ghost" onclick="openProductEditModal(' + p.id + ')">編集</button>'
       + '<button class="btn btn-sm btn-danger" onclick="deleteProduct(' + p.id + ')">削除</button>'
       + sizetableBtn
       + '</div>'
@@ -2048,28 +2122,91 @@ function renderProducts() {
   el.innerHTML = html;
 }
 
-async function openProductEditInline(id) {
-  const p = getProduct(id);
+function openProductEditModal(id) {
+  var p = getProduct(id);
   if (!p) return;
-  const newName = prompt('商品名', p.name);
-  if (newName===null) return;
-  const newCost = prompt('仕入れ値（元）', p.costCny);
-  if (newCost===null) return;
-  const newPrice = prompt('販売価格（円）', p.priceJpy);
-  if (newPrice===null) return;
-  const newUrl = prompt('タオバオURL', p.taobaoUrl);
-  if (newUrl===null) return;
-  const idx = state.products.findIndex(x=>x.id===id);
-  if (idx !== -1) {
-    state.products[idx] = {...state.products[idx], name:newName.trim()||p.name, costCny:parseFloat(newCost)||0, priceJpy:parseFloat(newPrice)||0, taobaoUrl:newUrl.trim()};
-    await dbSave('products', {id, name:state.products[idx].name, taobao_url:state.products[idx].taobaoUrl, cost_cny:state.products[idx].costCny, price_jpy:state.products[idx].priceJpy, memo:p.memo, active:p.active});
+
+  // memoからカラー・サイズを抽出
+  var colorMatch = p.memo ? p.memo.match(/【カラー】([^
+]*)/) : null;
+  var sizeMatch  = p.memo ? p.memo.match(/【サイズ】([^
+]*)/) : null;
+  var cleanMemo  = (p.memo || '')
+    .replace(/【カラー】[^
+]*/g, '')
+    .replace(/【サイズ】[^
+]*/g, '')
+    .replace(/【サイズ表】[\s\S]*?(?=
+【|$)/g, '')
+    .trim();
+
+  document.getElementById('pe-id').value = id;
+  document.getElementById('pe-name').value = p.name;
+  document.getElementById('pe-cost').value = p.costCny || '';
+  document.getElementById('pe-price').value = p.priceJpy || '';
+  document.getElementById('pe-url').value = p.taobaoUrl || '';
+  document.getElementById('pe-colors').value = colorMatch ? colorMatch[1] : '';
+  document.getElementById('pe-sizes').value = sizeMatch ? sizeMatch[1].split('、').join(', ') : '';
+  document.getElementById('pe-memo').value = cleanMemo;
+  document.getElementById('pe-active').value = p.active !== false ? 'true' : 'false';
+  document.getElementById('product-edit-modal').classList.add('open');
+}
+function closeProductEditModal() { document.getElementById('product-edit-modal').classList.remove('open'); }
+
+async function saveProductEdit() {
+  var id = parseInt(document.getElementById('pe-id').value);
+  var name = document.getElementById('pe-name').value.trim();
+  if (!name) { alert('商品名を入力してください'); return; }
+  var costCny  = parseFloat(document.getElementById('pe-cost').value) || 0;
+  var priceJpy = parseFloat(document.getElementById('pe-price').value) || 0;
+  var url      = document.getElementById('pe-url').value.trim();
+  var colorsRaw = document.getElementById('pe-colors').value.trim();
+  var sizesRaw  = document.getElementById('pe-sizes').value.trim();
+  var memo      = document.getElementById('pe-memo').value.trim();
+
+  // memoを再構成
+  var idx = state.products.findIndex(function(x){ return x.id === id; });
+  var oldMemo = idx !== -1 ? state.products[idx].memo || '' : '';
+  // サイズ表だけ保持
+  var sizeTableMatch = oldMemo.match(/【サイズ表】[\s\S]*/);
+  var sizeTablePart  = sizeTableMatch ? sizeTableMatch[0] : '';
+
+  var fullMemo = memo;
+  if (colorsRaw) {
+    var colorArr = colorsRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    fullMemo += '
+【カラー】' + colorArr.join('、');
   }
+  if (sizesRaw) {
+    var sizeArr = sizesRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    fullMemo += '
+【サイズ】' + sizeArr.join('、');
+  }
+  if (sizeTablePart) fullMemo += '
+' + sizeTablePart;
+  fullMemo = fullMemo.trim();
+
+  var active = document.getElementById('pe-active').value === 'true';
+  if (idx !== -1) {
+    state.products[idx] = { id: id, name: name, taobaoUrl: url, costCny: costCny, priceJpy: priceJpy, memo: fullMemo, active: active };
+    await dbSave('products', { id: id, name: name, taobao_url: url, cost_cny: costCny, price_jpy: priceJpy, memo: fullMemo, active: active });
+  }
+  closeProductEditModal();
+  renderAll();
+}
+
+async function deleteProductFromModal() {
+  var id = parseInt(document.getElementById('pe-id').value);
+  if (!confirm('この商品を削除しますか？')) return;
+  state.products = state.products.filter(function(p){ return p.id !== id; });
+  await dbDelete('products', id);
+  closeProductEditModal();
   renderAll();
 }
 
 async function deleteProduct(id) {
   if (!confirm('この商品を削除しますか？')) return;
-  state.products = state.products.filter(p => p.id !== id);
+  state.products = state.products.filter(function(p){ return p.id !== id; });
   await dbDelete('products', id);
   renderAll();
 }
