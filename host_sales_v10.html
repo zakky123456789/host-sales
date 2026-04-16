@@ -830,37 +830,6 @@
     </div>
   </div>
 
-<!-- 商品編集モーダル -->
-<div id="product-edit-modal" class="modal" onclick="if(event.target===this)closeProductEditModal()">
-  <div class="modal-box" style="max-width:640px">
-    <div class="modal-title">商品を編集</div>
-    <input type="hidden" id="pe-id">
-    <div class="form-grid form-grid-2" style="margin-bottom:14px">
-      <div class="form-group" style="grid-column:span 2"><label>商品名 <span style="color:var(--red)">*</span></label><input id="pe-name" placeholder="例：スリムフィット ストレートデニム"></div>
-    </div>
-    <div class="form-grid form-grid-2" style="margin-bottom:14px">
-      <div class="form-group"><label>仕入れ値（元）</label><input id="pe-cost" type="number" step="0.01" placeholder="例：85.00"></div>
-      <div class="form-group"><label>販売価格（円）</label><input id="pe-price" type="number" placeholder="例：4500"></div>
-    </div>
-    <div class="form-group" style="margin-bottom:14px"><label>タオバオURL</label><input id="pe-url" placeholder="https://item.taobao.com/..."></div>
-    <div class="form-group" style="margin-bottom:14px"><label>カラー展開（カンマ区切り・例: 黒色|ブラック, 白色|ホワイト）</label><input id="pe-colors" placeholder="黒色|ブラック, 白色|ホワイト, 紺色|ネイビー"></div>
-    <div class="form-group" style="margin-bottom:14px"><label>サイズ展開（カンマ区切り・例: S, M, L, XL）</label><input id="pe-sizes" placeholder="S, M, L, XL, 2XL"></div>
-    <div class="form-group" style="margin-bottom:14px"><label>メモ・商品説明</label><textarea id="pe-memo" rows="3" placeholder="商品の特徴・素材など"></textarea></div>
-    <div class="form-group" style="margin-bottom:20px">
-      <label>販売状態</label>
-      <select id="pe-active">
-        <option value="true">販売中</option>
-        <option value="false">停止</option>
-      </select>
-    </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn btn-danger btn-sm" onclick="deleteProductFromModal()">削除</button>
-      <button class="btn btn-ghost" onclick="closeProductEditModal()">キャンセル</button>
-      <button class="btn btn-primary" onclick="saveProductEdit()">保存する</button>
-    </div>
-  </div>
-</div>
-
 <!-- 店舗編集モーダル -->
 <div id="shop-edit-modal" class="modal" onclick="if(event.target===this)closeShopEditModal()">
   <div class="modal-box">
@@ -2042,65 +2011,62 @@ async function registerAIProduct() {
 
 // ---- 商品一覧レンダリング ----
 function renderProducts() {
-  const el = document.getElementById('products-list');
+  var el = document.getElementById('products-list');
   if (!el) return;
-
   if (state.products.length === 0) {
     el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">商品が登録されていません。上のAI解析または手動登録フォームから追加してください。</div>';
     return;
   }
+  var html = '';
+  state.products.forEach(function(p) {
+    var colorMatch = p.memo ? p.memo.match(/【カラー】([^\n]*)/) : null;
+    var sizeMatch  = p.memo ? p.memo.match(/【サイズ】([^\n]*)/) : null;
+    var colors = colorMatch ? colorMatch[1].split('、').filter(Boolean) : [];
+    var sizes  = sizeMatch  ? sizeMatch[1].split('、').filter(Boolean) : [];
+    var hasSizeTable = p.memo ? p.memo.indexOf('【サイズ表】') !== -1 : false;
 
-  let html = '';
-  state.products.forEach(p => {
-    const colorMatch = p.memo ? p.memo.match(/【カラー】([^\n]*)/) : null;
-    const sizeMatch = p.memo ? p.memo.match(/【サイズ】([^\n]*)/) : null;
-    const colors = colorMatch ? colorMatch[1].split('、').filter(Boolean) : [];
-    const sizes = sizeMatch ? sizeMatch[1].split('、').filter(Boolean) : [];
-    const hasSizeTable = p.memo ? p.memo.includes('【サイズ表】') : false;
-
-    let colorHtml = '';
+    var colorHtml = '';
     if (colors.length > 0) {
       colorHtml = '<div style="margin-bottom:6px;display:flex;gap:4px;flex-wrap:wrap">';
-      colors.slice(0, 8).forEach(c => {
+      colors.slice(0, 8).forEach(function(c) {
         var parts = c.split('|');
-        var cnLabel = parts[0] || c;
-        var jpLabel = parts[1] || '';
-        var jpSuffix = jpLabel ? ' <span style="font-size:10px;opacity:0.75;margin-left:2px">/ ' + htmlEscape(jpLabel) + '</span>' : '';
-        colorHtml += '<span class="product-tag" style="background:rgba(79,156,249,0.12);color:var(--accent)">🎨 ' + htmlEscape(cnLabel) + jpSuffix + '</span>';
+        var cn = htmlEscape(parts[0] || c);
+        var jp = parts[1] ? htmlEscape(parts[1]) : '';
+        colorHtml += '<span class="product-tag" style="background:rgba(79,156,249,0.12);color:var(--accent)">🎨 ' + cn + (jp ? ' <span style="font-size:10px;opacity:0.75">/ ' + jp + '</span>' : '') + '</span>';
       });
-      if (colors.length > 8) colorHtml += '<span style="font-size:11px;color:var(--muted)">+' + (colors.length-8) + '色</span>';
+      if (colors.length > 8) colorHtml += '<span style="font-size:11px;color:var(--muted)">+' + (colors.length - 8) + '色</span>';
       colorHtml += '</div>';
     }
-
-    let sizeHtml = '';
+    var sizeHtml = '';
     if (sizes.length > 0) {
       sizeHtml = '<div style="margin-bottom:6px;display:flex;gap:4px;flex-wrap:wrap">';
-      sizes.forEach(s => {
-        const jpInfo = SIZE_CN_TO_JP[s.toUpperCase()] || SIZE_CN_TO_JP[s] || '';
-        const jpS = jpInfo ? (jpInfo.split('JP:')[1] || '') : '';
+      sizes.forEach(function(s) {
+        var jpInfo = SIZE_CN_TO_JP[s.toUpperCase()] || SIZE_CN_TO_JP[s] || '';
+        var jpS = jpInfo ? (jpInfo.split('JP:')[1] || '') : '';
         sizeHtml += '<span class="product-tag" style="background:rgba(52,211,153,0.1);color:var(--green);font-family:var(--mono)">' + htmlEscape(s) + (jpS ? ' / JP:' + htmlEscape(jpS) : '') + '</span>';
       });
       sizeHtml += '</div>';
     }
+    var profitHtml = (p.costCny > 0 && p.priceJpy > 0)
+      ? '<span style="color:var(--green)">粗利目安: ' + yen(p.priceJpy - p.costCny * 20) + '（参考）</span>' : '';
+    var urlHtml = p.taobaoUrl
+      ? '<a href="' + htmlEscape(p.taobaoUrl) + '" target="_blank" style="font-size:11px;color:var(--muted)">🔗 タオバオで確認</a>' : '';
+    var sizetableBadge = hasSizeTable
+      ? '<span style="font-size:10px;background:rgba(124,92,252,0.15);color:var(--accent2);padding:1px 6px;border-radius:4px;font-weight:600">📏 サイズ表あり</span>' : '';
+    var sizetableBtn = hasSizeTable
+      ? '<button class="btn btn-sm" style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px" data-action="sizetable" data-id="' + p.id + '">📏 サイズ表</button>' : '';
 
-    const profitHtml = (p.costCny > 0 && p.priceJpy > 0)
-      ? '<span style="color:var(--green)">粗利目安: ' + yen(p.priceJpy - p.costCny * 20) + '（参考）</span>'
-      : '';
+    // 編集フォーム（インライン展開）
+    var colorVal = colors.join(', ');
+    var sizeVal  = sizes.join(', ');
+    var cleanMemo = (p.memo || '')
+      .replace(/【カラー】[^\n]*/g, '')
+      .replace(/【サイズ】[^\n]*/g, '')
+      .replace(/【サイズ表】[\s\S]*/g, '')
+      .trim();
 
-    const urlHtml = p.taobaoUrl
-      ? '<a href="' + p.taobaoUrl + '" target="_blank" style="font-size:11px;color:var(--muted)">🔗 タオバオで確認</a>'
-      : '';
-
-    const sizetableBadge = hasSizeTable
-      ? '<span style="font-size:10px;background:rgba(124,92,252,0.15);color:var(--accent2);padding:1px 6px;border-radius:4px;font-weight:600">📏 サイズ表あり</span>'
-      : '';
-
-    const sizetableBtn = hasSizeTable
-      ? '<button class="btn btn-sm" style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px" onclick="showSizeTable(' + p.id + ')">📏 サイズ表</button>'
-      : '';
-
-    html += '<div class="product-card">'
-      + '<div>'
+    html += '<div class="product-card" id="pcard-' + p.id + '">'
+      + '<div style="flex:1">'
       + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">'
       + '<strong style="font-size:14px">' + htmlEscape(p.name) + '</strong>'
       + '<span class="badge ' + (p.active ? 'badge-green' : 'badge-gray') + '" style="font-size:10px">' + (p.active ? '販売中' : '停止') + '</span>'
@@ -2109,105 +2075,107 @@ function renderProducts() {
       + '<div style="display:flex;gap:16px;margin-bottom:8px;font-size:12px">'
       + '<span style="color:var(--yellow)">仕入: ' + (p.costCny > 0 ? p.costCny + '元' : '-') + '</span>'
       + '<span style="color:var(--accent)">販売: ' + (p.priceJpy > 0 ? yen(p.priceJpy) : '-') + '</span>'
-      + profitHtml
-      + '</div>'
-      + colorHtml
-      + sizeHtml
-      + urlHtml
+      + profitHtml + '</div>'
+      + colorHtml + sizeHtml + urlHtml
       + '</div>'
       + '<div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end">'
-      + '<button class="btn btn-sm btn-ghost" onclick="openProductEditModal(' + p.id + ')">編集</button>'
-      + '<button class="btn btn-sm btn-danger" onclick="deleteProduct(' + p.id + ')">削除</button>'
+      + '<button class="btn btn-sm btn-ghost" data-action="edit" data-id="' + p.id + '">編集</button>'
+      + '<button class="btn btn-sm btn-danger" data-action="delete" data-id="' + p.id + '">削除</button>'
       + sizetableBtn
+      + '</div>'
+      + '</div>'
+      // インライン編集フォーム（初期非表示）
+      + '<div id="pedit-' + p.id + '" style="display:none;padding:16px;border-top:1px solid var(--border);background:var(--surface2)">'
+      + '<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:12px">✏️ 商品を編集</div>'
+      + '<div class="form-grid form-grid-4" style="margin-bottom:12px">'
+      + '<div class="form-group" style="grid-column:span 2"><label>商品名</label><input id="pei-name-' + p.id + '" value="' + htmlEscape(p.name) + '"></div>'
+      + '<div class="form-group"><label>仕入れ値（元）</label><input id="pei-cost-' + p.id + '" type="number" step="0.01" value="' + (p.costCny || '') + '"></div>'
+      + '<div class="form-group"><label>販売価格（円）</label><input id="pei-price-' + p.id + '" type="number" value="' + (p.priceJpy || '') + '"></div>'
+      + '</div>'
+      + '<div class="form-group" style="margin-bottom:12px"><label>タオバオURL</label><input id="pei-url-' + p.id + '" value="' + htmlEscape(p.taobaoUrl || '') + '"></div>'
+      + '<div class="form-grid form-grid-2" style="margin-bottom:12px">'
+      + '<div class="form-group"><label>カラー（カンマ区切り・例: 黒色|ブラック, 白色|ホワイト）</label><input id="pei-colors-' + p.id + '" value="' + htmlEscape(colorVal) + '"></div>'
+      + '<div class="form-group"><label>サイズ（カンマ区切り・例: S, M, L, XL）</label><input id="pei-sizes-' + p.id + '" value="' + htmlEscape(sizeVal) + '"></div>'
+      + '</div>'
+      + '<div class="form-grid form-grid-2" style="margin-bottom:12px">'
+      + '<div class="form-group"><label>メモ・説明</label><textarea id="pei-memo-' + p.id + '" rows="2">' + htmlEscape(cleanMemo) + '</textarea></div>'
+      + '<div class="form-group"><label>販売状態</label><select id="pei-active-' + p.id + '"><option value="true"' + (p.active !== false ? ' selected' : '') + '>販売中</option><option value="false"' + (p.active === false ? ' selected' : '') + '>停止</option></select></div>'
+      + '</div>'
+      + '<div style="display:flex;gap:8px">'
+      + '<button class="btn btn-primary btn-sm" data-action="save" data-id="' + p.id + '">💾 保存</button>'
+      + '<button class="btn btn-ghost btn-sm" data-action="cancel" data-id="' + p.id + '">キャンセル</button>'
+      + '<button class="btn btn-danger btn-sm" data-action="delprod" data-id="' + p.id + '" style="margin-left:auto">削除</button>'
       + '</div>'
       + '</div>';
   });
   el.innerHTML = html;
+
+  // イベント委譲で全ボタンを処理
+  el.onclick = function(e) {
+    var btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    var action = btn.getAttribute('data-action');
+    var id = parseInt(btn.getAttribute('data-id'));
+    if (action === 'edit') {
+      var form = document.getElementById('pedit-' + id);
+      if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    } else if (action === 'cancel') {
+      var form = document.getElementById('pedit-' + id);
+      if (form) form.style.display = 'none';
+    } else if (action === 'save') {
+      saveProductInline(id);
+    } else if (action === 'delete' || action === 'delprod') {
+      deleteProductInline(id);
+    } else if (action === 'sizetable') {
+      showSizeTable(id);
+    }
+  };
 }
 
-function openProductEditModal(id) {
-  id = parseInt(id);
-  var p = getProduct(id);
-  if (!p) return;
-
-  // memoからカラー・サイズを抽出
-  var colorMatch = p.memo ? p.memo.match(/【カラー】([^\n]*)/) : null;
-  var sizeMatch  = p.memo ? p.memo.match(/【サイズ】([^\n]*)/) : null;
-  var cleanMemo  = (p.memo || '')
-    .replace(/【カラー】[^\n]*/g, '')
-    .replace(/【サイズ】[^\n]*/g, '')
-    .replace(/【サイズ表】[\s\S]*?(?=\n【|$)/g, '')
-    .trim();
-
-  document.getElementById('pe-id').value = id;
-  document.getElementById('pe-name').value = p.name;
-  document.getElementById('pe-cost').value = p.costCny || '';
-  document.getElementById('pe-price').value = p.priceJpy || '';
-  document.getElementById('pe-url').value = p.taobaoUrl || '';
-  document.getElementById('pe-colors').value = colorMatch ? colorMatch[1] : '';
-  document.getElementById('pe-sizes').value = sizeMatch ? sizeMatch[1].split('、').join(', ') : '';
-  document.getElementById('pe-memo').value = cleanMemo;
-  document.getElementById('pe-active').value = p.active !== false ? 'true' : 'false';
-  document.getElementById('product-edit-modal').classList.add('open');
-}
-function closeProductEditModal() { document.getElementById('product-edit-modal').classList.remove('open'); }
-
-async function saveProductEdit() {
-  var id = parseInt(document.getElementById('pe-id').value);
-  var name = document.getElementById('pe-name').value.trim();
+async function saveProductInline(id) {
+  var name = document.getElementById('pei-name-' + id).value.trim();
   if (!name) { alert('商品名を入力してください'); return; }
-  var costCny  = parseFloat(document.getElementById('pe-cost').value) || 0;
-  var priceJpy = parseFloat(document.getElementById('pe-price').value) || 0;
-  var url      = document.getElementById('pe-url').value.trim();
-  var colorsRaw = document.getElementById('pe-colors').value.trim();
-  var sizesRaw  = document.getElementById('pe-sizes').value.trim();
-  var memo      = document.getElementById('pe-memo').value.trim();
+  var costCny  = parseFloat(document.getElementById('pei-cost-' + id).value) || 0;
+  var priceJpy = parseFloat(document.getElementById('pei-price-' + id).value) || 0;
+  var url      = document.getElementById('pei-url-' + id).value.trim();
+  var colorsRaw = document.getElementById('pei-colors-' + id).value.trim();
+  var sizesRaw  = document.getElementById('pei-sizes-' + id).value.trim();
+  var memo      = document.getElementById('pei-memo-' + id).value.trim();
+  var active    = document.getElementById('pei-active-' + id).value === 'true';
 
-  // memoを再構成
-  var idx = state.products.findIndex(function(x){ return x.id === id; });
-  var oldMemo = idx !== -1 ? state.products[idx].memo || '' : '';
-  // サイズ表だけ保持
+  var idx = state.products.findIndex(function(x) { return x.id === id; });
+  var oldMemo = idx !== -1 ? (state.products[idx].memo || '') : '';
   var sizeTableMatch = oldMemo.match(/【サイズ表】[\s\S]*/);
   var sizeTablePart  = sizeTableMatch ? sizeTableMatch[0] : '';
 
   var fullMemo = memo;
   if (colorsRaw) {
-    var colorArr = colorsRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    var colorArr = colorsRaw.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
     fullMemo += '\n【カラー】' + colorArr.join('、');
-
   }
   if (sizesRaw) {
-    var sizeArr = sizesRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    var sizeArr = sizesRaw.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
     fullMemo += '\n【サイズ】' + sizeArr.join('、');
-
   }
   if (sizeTablePart) fullMemo += '\n' + sizeTablePart;
-
   fullMemo = fullMemo.trim();
 
-  var active = document.getElementById('pe-active').value === 'true';
   if (idx !== -1) {
     state.products[idx] = { id: id, name: name, taobaoUrl: url, costCny: costCny, priceJpy: priceJpy, memo: fullMemo, active: active };
     await dbSave('products', { id: id, name: name, taobao_url: url, cost_cny: costCny, price_jpy: priceJpy, memo: fullMemo, active: active });
   }
-  closeProductEditModal();
   renderAll();
 }
 
-async function deleteProductFromModal() {
-  var id = parseInt(document.getElementById('pe-id').value);
+async function deleteProductInline(id) {
   if (!confirm('この商品を削除しますか？')) return;
-  state.products = state.products.filter(function(p){ return p.id !== id; });
+  state.products = state.products.filter(function(p) { return p.id !== id; });
   await dbDelete('products', id);
-  closeProductEditModal();
   renderAll();
 }
 
 async function deleteProduct(id) {
-  if (!confirm('この商品を削除しますか？')) return;
-  state.products = state.products.filter(function(p){ return p.id !== id; });
-  await dbDelete('products', id);
-  renderAll();
+  deleteProductInline(id);
 }
 
 // ===== 経費 =====
