@@ -2063,7 +2063,7 @@ function renderProducts() {
         var cnLabel = parts[0] || c;
         var jpLabel = parts[1] || '';
         var jpSuffix = jpLabel ? ' <span style="font-size:10px;opacity:0.75;margin-left:2px">/ ' + jpLabel + '</span>' : '';
-        colorHtml += '<span class="product-tag" style="background:rgba(79,156,249,0.12);color:var(--accent)">\u{1F3A8} ' + cnLabel + jpSuffix + '</span>';
+        colorHtml += '<span class="product-tag" style="background:rgba(79,156,249,0.12);color:var(--accent)">🎨 ' + cnLabel + jpSuffix + '</span>';
       });
       if (colors.length > 8) colorHtml += '<span style="font-size:11px;color:var(--muted)">+' + (colors.length-8) + '色</span>';
       colorHtml += '</div>';
@@ -2169,16 +2169,16 @@ async function saveProductEdit() {
   var fullMemo = memo;
   if (colorsRaw) {
     var colorArr = colorsRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
-    fullMemo += '
-【カラー】' + colorArr.join('、');
+    fullMemo += '\n【カラー】' + colorArr.join('、');
+
   }
   if (sizesRaw) {
     var sizeArr = sizesRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
-    fullMemo += '
-【サイズ】' + sizeArr.join('、');
+    fullMemo += '\n【サイズ】' + sizeArr.join('、');
+
   }
-  if (sizeTablePart) fullMemo += '
-' + sizeTablePart;
+  if (sizeTablePart) fullMemo += '\n' + sizeTablePart;
+
   fullMemo = fullMemo.trim();
 
   var active = document.getElementById('pe-active').value === 'true';
@@ -2663,7 +2663,7 @@ function showSizeTable(id) {
   var p = getProduct(id);
   if (!p) return;
 
-  document.getElementById('sizetable-modal-title').textContent = '\u{1F4CF} ' + p.name + ' \u30B5\u30A4\u30BA\u8868';
+  document.getElementById('sizetable-modal-title').textContent = '📏 ' + p.name + ' \u30B5\u30A4\u30BA\u8868';
 
   // カラー抽出
   var colorMatch = p.memo ? p.memo.match(/\u3010\u30AB\u30E9\u30FC\u3011([^\n]*)/) : null;
@@ -2675,7 +2675,7 @@ function showSizeTable(id) {
       var parts = c.split('|');
       var cnLabel = parts[0] || c;
       var jpLabel = parts[1] || '';
-      cHtml += '<span class="color-chip">\u{1F3A8} ' + cnLabel + (jpLabel ? '<span style="font-size:10px;opacity:0.7;margin-left:4px">/ ' + jpLabel + '</span>' : '') + '</span>';
+      cHtml += '<span class="color-chip">🎨 ' + cnLabel + (jpLabel ? '<span style="font-size:10px;opacity:0.7;margin-left:4px">/ ' + jpLabel + '</span>' : '') + '</span>';
     });
     colorsEl.innerHTML = cHtml;
     colorsEl.style.display = 'flex';
