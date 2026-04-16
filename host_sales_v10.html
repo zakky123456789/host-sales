@@ -2127,17 +2127,12 @@ function openProductEditModal(id) {
   if (!p) return;
 
   // memoからカラー・サイズを抽出
-  var colorMatch = p.memo ? p.memo.match(/【カラー】([^
-]*)/) : null;
-  var sizeMatch  = p.memo ? p.memo.match(/【サイズ】([^
-]*)/) : null;
+  var colorMatch = p.memo ? p.memo.match(/【カラー】([^\n]*)/) : null;
+  var sizeMatch  = p.memo ? p.memo.match(/【サイズ】([^\n]*)/) : null;
   var cleanMemo  = (p.memo || '')
-    .replace(/【カラー】[^
-]*/g, '')
-    .replace(/【サイズ】[^
-]*/g, '')
-    .replace(/【サイズ表】[\s\S]*?(?=
-【|$)/g, '')
+    .replace(/【カラー】[^\n]*/g, '')
+    .replace(/【サイズ】[^\n]*/g, '')
+    .replace(/【サイズ表】[\s\S]*?(?=\n【|$)/g, '')
     .trim();
 
   document.getElementById('pe-id').value = id;
