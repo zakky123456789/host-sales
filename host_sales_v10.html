@@ -1150,9 +1150,9 @@ function updateThemeLabel() {
 }
 
 // ===== ヘルパー =====
-function getShop(id) { return state.shops.find(s => s.id === id); }
-function getHost(id) { return state.hosts.find(h => h.id === id); }
-function getProduct(id) { return state.products.find(p => p.id === id); }
+function getShop(id) { var n=parseInt(id); return state.shops.find(function(s){ return s.id === n; }); }
+function getHost(id) { var n=parseInt(id); return state.hosts.find(function(h){ return h.id === n; }); }
+function getProduct(id) { var n=parseInt(id); return state.products.find(function(p){ return p.id === n; }); }
 function ordersOfMonth(y, m) { return state.orders.filter(o => o.y === y && o.m === m); }
 function expOfMonth(y, m) { return state.expenses.filter(e => e.y === y && e.m === m); }
 function revolutOfMonth(y, m) { return state.revolut.filter(r => r.y === y && r.m === m); }
@@ -2123,6 +2123,7 @@ function renderProducts() {
 }
 
 function openProductEditModal(id) {
+  id = parseInt(id);
   var p = getProduct(id);
   if (!p) return;
 
