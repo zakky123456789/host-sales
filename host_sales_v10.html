@@ -397,7 +397,12 @@
         </div>
         <div style="padding:20px">
           <!-- ステップ説明 -->
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
+            <div style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.25);border-radius:8px;padding:12px;text-align:center">
+              <div style="font-size:20px;margin-bottom:4px">📸</div>
+              <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px">商品画像をアップロード</div>
+              <div style="font-size:11px;color:var(--muted)">スクショや保存した画像をドロップ</div>
+            </div>
             <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
               <div style="font-size:20px;margin-bottom:4px">1️⃣</div>
               <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">タオバオURLを入力</div>
@@ -406,13 +411,32 @@
             <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
               <div style="font-size:20px;margin-bottom:4px">2️⃣</div>
               <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">商品テキストを貼り付け</div>
-              <div style="font-size:11px;color:var(--muted)">タオバオページで Ctrl+A → Ctrl+C してここへ</div>
+              <div style="font-size:11px;color:var(--muted)">任意：画像だけでもOK</div>
             </div>
             <div style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.25);border-radius:8px;padding:12px;text-align:center">
               <div style="font-size:20px;margin-bottom:4px">3️⃣</div>
               <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px">AI解析 → 自動入力</div>
               <div style="font-size:11px;color:var(--muted)">商品名・カラー・サイズ・サイズ表を生成</div>
             </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:14px">
+            <label style="display:flex;align-items:center;gap:8px">
+              🖼️ 商品メイン画像
+              <span style="font-size:10px;background:rgba(52,211,153,0.15);color:var(--green);padding:1px 7px;border-radius:4px;font-weight:600">タオバオの商品写真をスクショ or 保存してアップロード</span>
+            </label>
+            <div id="ai-img-upload-area" onclick="document.getElementById('ai-img-file').click()" style="border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:all 0.15s;background:var(--surface2)" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleProductImgDrop(event)">
+              <div id="ai-img-preview" style="display:none;position:relative;display:inline-block">
+                <img id="ai-img-preview-img" style="max-height:120px;max-width:100%;border-radius:6px;object-fit:contain">
+                <button onclick="event.stopPropagation();clearProductImg()" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:12px;line-height:20px;padding:0">✕</button>
+              </div>
+              <div id="ai-img-placeholder" style="color:var(--muted);font-size:13px">
+                <div style="font-size:28px;margin-bottom:6px">📸</div>
+                <div>クリックまたはドラッグ＆ドロップで画像をアップロード</div>
+                <div style="font-size:11px;margin-top:4px">JPG / PNG / WEBP</div>
+              </div>
+            </div>
+            <input type="file" id="ai-img-file" accept="image/*" style="display:none" onchange="handleProductImgFile(this)">
           </div>
 
           <div class="form-group" style="margin-bottom:14px">
@@ -423,9 +447,9 @@
           <div class="form-group" style="margin-bottom:14px">
             <label style="display:flex;align-items:center;gap:8px">
               ② 商品ページのテキスト
-              <span style="font-size:10px;background:rgba(251,191,36,0.15);color:var(--yellow);padding:1px 7px;border-radius:4px;font-weight:600">タオバオページで Ctrl+A → Ctrl+C → ここに Ctrl+V</span>
+              <span style="font-size:10px;background:rgba(148,163,184,0.15);color:var(--muted);padding:1px 7px;border-radius:4px;font-weight:600">任意 — 画像だけでもOK</span>
             </label>
-            <textarea id="ai-pagetext" rows="5" placeholder="タオバオ商品ページを開いて Ctrl+A（全選択）→ Ctrl+C（コピー）してこの欄に Ctrl+V で貼り付けてください。&#10;サイズ表のテキストも含まれていれば自動で読み取ります。" style="font-size:12px;min-height:100px;resize:vertical"></textarea>
+            <textarea id="ai-pagetext" rows="5" placeholder="（任意）テキストを貼ると精度向上。タオバオページで Ctrl+A → Ctrl+C → ここに Ctrl+V&#10;画像のみでも解析できます。" style="font-size:12px;min-height:100px;resize:vertical"></textarea>
           </div>
 
           <div style="margin-bottom:14px">
@@ -949,6 +973,11 @@ let state = {
 
 // ===== ユーティリティ =====
 const fmt = n => Math.round(n).toLocaleString('ja-JP');
+function productImgError(img) {
+  img.style.display = 'none';
+  img.parentElement.innerHTML = '👕';
+  img.parentElement.style.fontSize = '28px';
+}
 function htmlEscape(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
@@ -1013,7 +1042,7 @@ async function loadFromDB() {
       state.hosts = hostsR.data.map(r => ({ id: Number(r.id), name: r.name, shopId: r.shop_id, deliveryAddress: r.delivery_address||'', zip: r.zip||'', tel: r.tel||'', memo: r.memo||'' }));
     }
     if (productsR.data?.length > 0) {
-      state.products = productsR.data.map(r => ({ id: Number(r.id), name: r.name, taobaoUrl: r.taobao_url||'', costCny: Number(r.cost_cny||0), priceJpy: Number(r.price_jpy||0), memo: r.memo||'', active: r.active!==false }));
+      state.products = productsR.data.map(r => ({ id: Number(r.id), name: r.name, taobaoUrl: r.taobao_url||'', costCny: Number(r.cost_cny||0), priceJpy: Number(r.price_jpy||0), memo: r.memo||'', imageUrl: r.image_url||'', active: r.active!==false }));
     }
     if (ordersR.data?.length > 0) {
       state.orders = ordersR.data.map(r => ({
@@ -1697,6 +1726,37 @@ async function addProduct() {
 
 let aiProductData = {};
 let ocrSizeTable = null; // 画像OCRで取得したサイズ表
+let productImgBase64 = ''; // アップロードした商品画像のbase64
+
+function handleProductImgFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  readProductImgFile(file);
+}
+function handleProductImgDrop(e) {
+  e.preventDefault();
+  document.getElementById('ai-img-upload-area').style.borderColor = 'var(--border)';
+  var file = e.dataTransfer.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  readProductImgFile(file);
+}
+function readProductImgFile(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    productImgBase64 = e.target.result; // "data:image/jpeg;base64,..."
+    var img = document.getElementById('ai-img-preview-img');
+    img.src = productImgBase64;
+    document.getElementById('ai-img-preview').style.display = 'inline-block';
+    document.getElementById('ai-img-placeholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+function clearProductImg() {
+  productImgBase64 = '';
+  document.getElementById('ai-img-preview').style.display = 'none';
+  document.getElementById('ai-img-placeholder').style.display = 'block';
+  document.getElementById('ai-img-file').value = '';
+}
 
 // ---- 画像URLフィールド追加 ----
 function addImgUrlField() {
@@ -1779,6 +1839,7 @@ function resetAIPanel() {
   document.getElementById('img-ocr-status').textContent = '';
   aiProductData = {};
   ocrSizeTable = null;
+  clearProductImg();
 }
 
 // サイズ換算テーブル
@@ -1792,47 +1853,70 @@ const SIZE_CN_TO_JP = {
 
 // ---- メイン解析 ----
 async function analyzeProduct() {
-  const url = document.getElementById('ai-url').value.trim();
-  const pageText = document.getElementById('ai-pagetext').value.trim();
+  const url       = document.getElementById('ai-url').value.trim();
+  const pageText  = document.getElementById('ai-pagetext').value.trim();
+  const hasImage  = !!productImgBase64;
 
-  if (!url && !pageText) {
-    showAIError('タオバオURLまたは商品ページテキストを入力してください');
+  if (!url && !pageText && !hasImage) {
+    showAIError('商品画像・URL・テキストのいずれかを入力してください');
     return;
   }
 
   setAILoading(true, 'AIが商品情報を解析中...');
 
-  const prompt = `あなたはタオバオ商品情報の専門家です。以下の情報から商品データを抽出・生成してください。
+  // 画像がある場合は画像解析特化プロンプト、ない場合はテキスト解析プロンプト
+  const jsonSchema = `{
+  "name_cn": "中国語の商品名（画像・テキストから抽出。なければ空文字）",
+  "name_jp": "日本メンズアパレルECサイト向けの商品名（必須・15〜25文字・魅力的で具体的・例：スリムフィット ストレートデニムパンツ）",
+  "price_cny": 仕入れ価格の数値（元。なければ0）,
+  "colors": [{"cn": "中国語カラー名", "jp": "日本語カタカナ名"}],
+  "sizes_cn": ["M", "L", "XL", "2XL"],
+  "size_table": [{"size": "M", "chest": "96", "waist": "80", "length": "68", "shoulder": "44"}],
+  "description": "商品の特徴・素材・スタイルを日本語で50文字以内",
+  "category": "トップス/パンツ/アウター/シューズ/アクセサリー/その他"
+}`;
+
+  const baseInstructions = `重要ルール:
+- name_jpは必ずメンズアパレルらしい魅力的な日本語名にしてください
+- colorsは{cn:中国語名, jp:日本語カタカナ名}の配列にしてください
+- size_tableはサイズ数値が確認できれば抽出、なければ空配列
+- 以下のJSON形式のみで回答（前後に何も書かない、コードブロックなし）:
+${jsonSchema}`;
+
+  let prompt;
+  if (hasImage) {
+    prompt = `あなたはタオバオ商品画像の解析専門家です。添付のスクリーンショット画像から商品情報を読み取ってください。
+
+${url ? 'URL: ' + url : ''}
+${pageText ? '補足テキスト:\n' + pageText.slice(0, 4000) : ''}
+
+画像から読み取れる情報（商品名・カラー・サイズ・価格・素材・サイズ表など）をすべて抽出してください。
+${baseInstructions}`;
+  } else {
+    prompt = `あなたはタオバオ商品情報の専門家です。以下の情報から商品データを抽出・生成してください。
 
 URL: ${url || '（未入力）'}
 
 商品ページテキスト:
 ${pageText ? pageText.slice(0, 12000) : '（未入力）'}
 
----
-以下のJSON形式のみで回答してください（前後に何も書かない、コードブロックなし）:
-{
-  "name_cn": "中国語の商品名（テキストから抽出、なければ空文字）",
-  "name_jp": "日本メンズアパレルECサイト向けの商品名（必須・15〜25文字・魅力的で具体的・例：スリムフィット ストレートデニムパンツ）",
-  "price_cny": 仕入れ価格の数値（元、テキストから抽出、なければ0）,
-  "colors": ["カラー名1", "カラー名2"],
-  "sizes_cn": ["M", "L", "XL", "2XL"],
-  "size_table": [
-    {"size": "M", "chest": "96", "waist": "80", "length": "68", "shoulder": "44"},
-    {"size": "L", "chest": "100", "waist": "84", "length": "70", "shoulder": "46"}
-  ],
-  "description": "商品の特徴・素材・スタイルを日本語で50文字以内",
-  "category": "商品カテゴリ（トップス/パンツ/アウター/シューズ/アクセサリー/その他）"
-}
-
-重要:
-- name_jpは必ずメンズアパレルらしい魅力的な日本語名にしてください
-- size_tableはテキストに数値が含まれていれば抽出、なければ空配列
-- colorsは必ず{cn:中国語名, jp:日本語カタカナ名}の配列にしてください
-- sizes_cnとcolorsはテキストから最大限抽出してください`;
+${baseInstructions}`;
+  }
 
   try {
-    const rawText = await callClaude([{ role: 'user', content: prompt }], 2000);
+    var claudeMessages;
+    if (hasImage) {
+      var b64data = productImgBase64.split(',')[1];
+      var mtype   = productImgBase64.split(';')[0].split(':')[1];
+      claudeMessages = [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: mtype, data: b64data } },
+        { type: 'text', text: prompt }
+      ]}];
+    } else {
+      claudeMessages = [{ role: 'user', content: prompt }];
+    }
+
+    const rawText = await callClaude(claudeMessages, 2000);
 
     let parsed;
     try {
@@ -1847,6 +1931,9 @@ ${pageText ? pageText.slice(0, 12000) : '（未入力）'}
       parsed.size_table = ocrSizeTable;
     }
 
+    // アップロード画像をそのまま商品画像として使用
+    if (hasImage) parsed.image_url = productImgBase64;
+
     aiProductData = { ...parsed, url };
     setAILoading(false);
     renderAIResult(aiProductData);
@@ -1855,6 +1942,7 @@ ${pageText ? pageText.slice(0, 12000) : '（未入力）'}
     showAIError(e.message || '解析エラーが発生しました');
   }
 }
+
 
 // ---- 商品名再生成 ----
 async function regenerateName() {
@@ -2001,8 +2089,12 @@ async function registerAIProduct() {
   }
 
   const id = state.nextId++;
-  state.products.push({ id, name, taobaoUrl: url, costCny: cost, priceJpy: price, memo: fullMemo.trim(), active: true });
-  await dbSave('products', { id, name, taobao_url: url, cost_cny: cost, price_jpy: price, memo: fullMemo.trim(), active: true });
+  var imgUrl = (aiProductData.image_url || '').trim();
+  if (imgUrl && imgUrl.indexOf('//') === 0) imgUrl = 'https:' + imgUrl;
+  // AI抽出URLが空の場合、アップロード画像のbase64を使用
+  if (!imgUrl && productImgBase64) imgUrl = productImgBase64;
+  state.products.push({ id, name, taobaoUrl: url, costCny: cost, priceJpy: price, memo: fullMemo.trim(), imageUrl: imgUrl, active: true });
+  await dbSave('products', { id, name, taobao_url: url, cost_cny: cost, price_jpy: price, memo: fullMemo.trim(), image_url: imgUrl, active: true });
 
   resetAIPanel();
   renderAll();
@@ -2065,8 +2157,18 @@ function renderProducts() {
       .replace(/【サイズ表】[\s\S]*/g, '')
       .trim();
 
-    html += '<div class="product-card" id="pcard-' + p.id + '">'
-      + '<div style="flex:1">'
+    var imgSrc = p.imageUrl || '';
+    var imgHtml = '<div style="width:80px;height:80px;flex-shrink:0;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--muted)">';
+    if (imgSrc) {
+      imgHtml += '<img src="' + htmlEscape(imgSrc) + '" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="productImgError(this)">';
+    } else {
+      imgHtml += '👕';
+    }
+    imgHtml += '</div>';
+
+    html += '<div class="product-card" id="pcard-' + p.id + '" style="display:grid;grid-template-columns:80px 1fr auto;gap:14px;align-items:flex-start">'
+      + imgHtml
+      + '<div style="min-width:0">'
       + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">'
       + '<strong style="font-size:14px">' + htmlEscape(p.name) + '</strong>'
       + '<span class="badge ' + (p.active ? 'badge-green' : 'badge-gray') + '" style="font-size:10px">' + (p.active ? '販売中' : '停止') + '</span>'
@@ -2093,6 +2195,7 @@ function renderProducts() {
       + '<div class="form-group"><label>販売価格（円）</label><input id="pei-price-' + p.id + '" type="number" value="' + (p.priceJpy || '') + '"></div>'
       + '</div>'
       + '<div class="form-group" style="margin-bottom:12px"><label>タオバオURL</label><input id="pei-url-' + p.id + '" value="' + htmlEscape(p.taobaoUrl || '') + '"></div>'
+      + '<div class="form-group" style="margin-bottom:12px"><label>商品画像URL（空欄で変更なし）</label><input id="pei-imgurl-' + p.id + '" value="' + htmlEscape(p.imageUrl || '') + '" placeholder="https://img.alicdn.com/..."></div>'
       + '<div class="form-grid form-grid-2" style="margin-bottom:12px">'
       + '<div class="form-group"><label>カラー（カンマ区切り・例: 黒色|ブラック, 白色|ホワイト）</label><input id="pei-colors-' + p.id + '" value="' + htmlEscape(colorVal) + '"></div>'
       + '<div class="form-group"><label>サイズ（カンマ区切り・例: S, M, L, XL）</label><input id="pei-sizes-' + p.id + '" value="' + htmlEscape(sizeVal) + '"></div>'
@@ -2161,8 +2264,10 @@ async function saveProductInline(id) {
   fullMemo = fullMemo.trim();
 
   if (idx !== -1) {
-    state.products[idx] = { id: id, name: name, taobaoUrl: url, costCny: costCny, priceJpy: priceJpy, memo: fullMemo, active: active };
-    await dbSave('products', { id: id, name: name, taobao_url: url, cost_cny: costCny, price_jpy: priceJpy, memo: fullMemo, active: active });
+    var newImgUrl = document.getElementById('pei-imgurl-' + id) ? document.getElementById('pei-imgurl-' + id).value.trim() : '';
+    var keepImg = newImgUrl || (state.products[idx].imageUrl || '');
+    state.products[idx] = { id: id, name: name, taobaoUrl: url, costCny: costCny, priceJpy: priceJpy, memo: fullMemo, imageUrl: keepImg, active: active };
+    await dbSave('products', { id: id, name: name, taobao_url: url, cost_cny: costCny, price_jpy: priceJpy, memo: fullMemo, image_url: keepImg, active: active });
   }
   renderAll();
 }
