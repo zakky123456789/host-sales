@@ -2296,7 +2296,8 @@ const SIZE_CN_TO_JP = {
 // ---- メイン解析 ----
 async function analyzeProduct() {
   const url        = document.getElementById('ai-url').value.trim();
-  const pageText   = document.getElementById('ai-pagetext').value.trim();
+  var _aiPagetextEl = document.getElementById('ai-pagetext');
+  const pageText   = _aiPagetextEl ? _aiPagetextEl.value.trim() : '';
   const analysisImgList = getAnalysisImgs();
   const hasAnalysisImgs = analysisImgList.length > 0;
 
