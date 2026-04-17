@@ -403,33 +403,36 @@
         </div>
         <div style="padding:20px">
           <!-- ステップ説明 -->
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
-            <div style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.25);border-radius:8px;padding:12px;text-align:center">
-              <div style="font-size:20px;margin-bottom:4px">📸</div>
-              <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px">商品画像をアップロード</div>
-              <div style="font-size:11px;color:var(--muted)">スクショや保存した画像をドロップ</div>
-            </div>
-            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
-              <div style="font-size:20px;margin-bottom:4px">1️⃣</div>
-              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">タオバオURLを入力</div>
-              <div style="font-size:11px;color:var(--muted)">商品ページのURLをここに貼る</div>
-            </div>
-            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
-              <div style="font-size:20px;margin-bottom:4px">2️⃣</div>
-              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">商品テキストを貼り付け</div>
-              <div style="font-size:11px;color:var(--muted)">任意：画像だけでもOK</div>
-            </div>
-            <div style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.25);border-radius:8px;padding:12px;text-align:center">
-              <div style="font-size:20px;margin-bottom:4px">3️⃣</div>
-              <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px">AI解析 → 自動入力</div>
-              <div style="font-size:11px;color:var(--muted)">商品名・カラー・サイズ・サイズ表を生成</div>
+          <div style="background:rgba(79,156,249,0.06);border:1px solid rgba(79,156,249,0.2);border-radius:10px;padding:14px 16px;margin-bottom:20px">
+            <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px">💡 このスクショ1枚でOK → AI が全項目を自動入力</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+              <div style="background:var(--surface);border-radius:8px;padding:10px;text-align:center">
+                <div style="font-size:16px;margin-bottom:3px">🏷️</div>
+                <div style="font-size:11px;font-weight:700;color:var(--text)">商品名</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px">日本語名に変換</div>
+              </div>
+              <div style="background:var(--surface);border-radius:8px;padding:10px;text-align:center">
+                <div style="font-size:16px;margin-bottom:3px">💴</div>
+                <div style="font-size:11px;font-weight:700;color:var(--text)">仕入れ値（元）</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px">価格を自動抽出</div>
+              </div>
+              <div style="background:var(--surface);border-radius:8px;padding:10px;text-align:center">
+                <div style="font-size:16px;margin-bottom:3px">🎨</div>
+                <div style="font-size:11px;font-weight:700;color:var(--text)">バリアント＆カラー</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px">選択肢を自動分類</div>
+              </div>
+              <div style="background:var(--surface);border-radius:8px;padding:10px;text-align:center">
+                <div style="font-size:16px;margin-bottom:3px">📐</div>
+                <div style="font-size:11px;font-weight:700;color:var(--text)">サイズ展開</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px">S/M/L/XL等を抽出</div>
+              </div>
             </div>
           </div>
 
           <div class="form-group" style="margin-bottom:14px">
             <label style="display:flex;align-items:center;gap:8px">
-              🖼️ 商品メイン画像
-              <span style="font-size:10px;background:rgba(52,211,153,0.15);color:var(--green);padding:1px 7px;border-radius:4px;font-weight:600">タオバオの商品写真をスクショ or 保存してアップロード</span>
+              📸 タオバオ商品詳細ページのスクリーンショット
+              <span style="font-size:10px;background:rgba(52,211,153,0.15);color:var(--green);padding:1px 7px;border-radius:4px;font-weight:600">商品名・価格・カラー・バリアント・サイズが1枚で読み取れます</span>
             </label>
             <div id="ai-img-upload-area" onclick="document.getElementById('ai-img-file').click()" style="border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:all 0.15s;background:var(--surface2)" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleProductImgDrop(event)">
               <div id="ai-img-preview" style="display:none;position:relative;display:inline-block">
@@ -438,8 +441,8 @@
               </div>
               <div id="ai-img-placeholder" style="color:var(--muted);font-size:13px">
                 <div style="font-size:28px;margin-bottom:6px">📸</div>
-                <div>クリックまたはドラッグ＆ドロップで画像をアップロード</div>
-                <div style="font-size:11px;margin-top:4px">JPG / PNG / WEBP</div>
+                <div style="font-weight:600">タオバオ商品詳細ページをスクリーンショット → ここにドロップ</div>
+                <div style="font-size:11px;margin-top:4px;color:var(--muted)">商品名・¥価格・颜色（バリアント）・尺码（サイズ）が写っていればOK　JPG / PNG / WEBP</div>
               </div>
             </div>
             <input type="file" id="ai-img-file" accept="image/*" style="display:none" onchange="handleProductImgFile(this)">
@@ -509,6 +512,10 @@
             </div>
 
             <div style="margin-bottom:14px">
+              <div id="ai-variants-section" style="display:none;margin-bottom:14px">
+                <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">🏷️ バリアント（種類）</div>
+                <div id="ai-variants" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;min-height:40px"></div>
+              </div>
               <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">🎨 カラー展開</div>
               <div id="ai-colors" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;min-height:40px"></div>
             </div>
@@ -1981,7 +1988,7 @@ async function runSizeImgOCR(btn) {
     var b64data = base64.split(',')[1];
     var mtype   = base64.split(';')[0].split(':')[1];
 
-    var prompt = 'アパレル商品のサイズ表画像です。画像内の全サイズ表を正確に読み取ってください。\n\n【重要】上着と下着でサイズ表が分かれている場合（セットアップ/スーツ上下など）は必ず別々に抽出してください。\n上着の列名例：衣长/着丈、胸围/胸囲、肩宽/肩幅、袖长/袖丈、袖口\n下着の列名例：裤长/丈、腰围/ウエスト、臀围/ヒップ、裤口/裾幅、大腿/太腿\n\n以下のJSON形式のみで返してください（前後に何も書かない）:\n{\n  "tops": [{"size":"M","length":"55.5","chest":"116","shoulder":"48","sleeve":"62","cuff":"29"}],\n  "bottoms": [{"size":"M","pants_length":"108","hip":"102","waist":"80","hem":"63"}],\n  "unified": []\n}\n\nルール:\n- 上着と下着でテーブルが分かれている → tops と bottoms に分けて、unified は空配列\n- ジャケット単体・パンツ単体など1種類のみ → unified のみ、tops/bottoms は空配列\n- 項目名は画像の列名をそのまま英語キーに変換: length(衣长/着丈), chest(胸围/胸囲), shoulder(肩宽/肩幅), sleeve(袖长/袖丈), cuff(袖口), pants_length(裤长/丈), waist(腰围/ウエスト), hip(臀围/ヒップ), hem(裤口/裾幅), thigh(大腿/太腿)\n- 数値のみ（単位・記号なし）。その列が存在しない場合はキーを省略';
+    var prompt = 'アパレル商品のサイズ表画像です。\n\n【最重要】同じサイズ（M/L/XLなど）が画像内に複数回登場しても、各サイズは1行だけ抽出してください。重複は絶対に含めないこと。\n\n【重要】上着と下着でサイズ表が分かれている場合（セットアップ/スーツ上下など）は必ず別々に抽出してください。\n上着の列名例：衣长/着丈、胸围/胸囲、肩宽/肩幅、袖长/袖丈、袖口\n下着の列名例：裤长/丈、腰围/ウエスト、臀围/ヒップ、裤口/裾幅、大腿/太腿\n\n以下のJSON形式のみで返してください（前後に何も書かない）:\n{\n  "tops": [{"size":"M","length":"55.5","chest":"116","shoulder":"48","sleeve":"62","cuff":"29"}],\n  "bottoms": [{"size":"M","pants_length":"108","hip":"102","waist":"80","hem":"63"}],\n  "unified": []\n}\n\nルール:\n- 各サイズは必ず1行のみ（M行が2回あれば最初の1行だけ使う）\n- 上着と下着でテーブルが分かれている → tops と bottoms に分けて、unified は空配列\n- ジャケット単体・パンツ単体など1種類のみ → unified のみ、tops/bottoms は空配列\n- 項目名は画像の列名をそのまま英語キーに変換: length(衣长/着丈), chest(胸围/胸囲), shoulder(肩宽/肩幅), sleeve(袖长/袖丈), cuff(袖口), pants_length(裤长/丈), waist(腰围/ウエスト), hip(臀围/ヒップ), hem(裤口/裾幅), thigh(大腿/太腿)\n- 数値のみ（単位・記号なし）。その列が存在しない場合はキーを省略';
 
     var text = await callClaude([{
       role: 'user',
@@ -2002,10 +2009,19 @@ async function runSizeImgOCR(btn) {
     var total   = tops.length + bottoms.length + unified.length;
     if (total === 0) throw new Error('サイズデータが見つかりませんでした');
 
+    // 重複除去ヘルパー（同じsizeの行は最初の1件のみ残す）
+    function dedupRows(rows) {
+      var seen = {};
+      return rows.filter(function(r) {
+        var key = (r.size || '').toString().trim().toUpperCase();
+        if (seen[key]) return false;
+        seen[key] = true; return true;
+      });
+    }
     if (!ocrSizeTable) ocrSizeTable = { tops: [], bottoms: [], unified: [] };
-    ocrSizeTable.tops    = ocrSizeTable.tops.concat(tops);
-    ocrSizeTable.bottoms = ocrSizeTable.bottoms.concat(bottoms);
-    ocrSizeTable.unified = ocrSizeTable.unified.concat(unified);
+    ocrSizeTable.tops    = dedupRows(ocrSizeTable.tops.concat(tops));
+    ocrSizeTable.bottoms = dedupRows(ocrSizeTable.bottoms.concat(bottoms));
+    ocrSizeTable.unified = dedupRows(ocrSizeTable.unified.concat(unified));
 
     var desc = [];
     if (tops.length)    desc.push('上着 ' + tops.length + '行');
@@ -2072,45 +2088,54 @@ const SIZE_CN_TO_JP = {
 
 // ---- メイン解析 ----
 async function analyzeProduct() {
-  const url       = document.getElementById('ai-url').value.trim();
-  const pageText  = document.getElementById('ai-pagetext').value.trim();
-  const hasImage  = !!productImgBase64;
+  const url      = document.getElementById('ai-url').value.trim();
+  const pageText = document.getElementById('ai-pagetext').value.trim();
+  const hasImage = !!productImgBase64;
 
   if (!url && !pageText && !hasImage) {
-    showAIError('商品画像・URL・テキストのいずれかを入力してください');
+    showAIError('スクリーンショット・URL・テキストのいずれかを入力してください');
     return;
   }
 
   setAILoading(true, 'AIが商品情報を解析中...');
 
-  // 画像がある場合は画像解析特化プロンプト、ない場合はテキスト解析プロンプト
   const jsonSchema = `{
-  "name_cn": "中国語の商品名（画像・テキストから抽出。なければ空文字）",
-  "name_jp": "日本メンズアパレルECサイト向けの商品名（必須・15〜25文字・魅力的で具体的・例：スリムフィット ストレートデニムパンツ）",
-  "price_cny": 仕入れ価格の数値（元。なければ0）,
+  "name_cn": "中国語の商品名（ページタイトルから抽出）",
+  "name_jp": "日本メンズアパレルECサイト向け商品名（必須・15〜25文字・魅力的で具体的）",
+  "price_cny": 仕入れ価格の数値（元・割引後の券后价を優先。なければ0）,
+  "variants": [{"name": "バリアント名（日本語）", "name_cn": "中国語元名", "price_cny": 0}],
   "colors": [{"cn": "中国語カラー名", "jp": "日本語カタカナ名"}],
-  "sizes_cn": ["M", "L", "XL", "2XL"],
-  "size_table": [{"size": "M", "chest": "96", "waist": "80", "length": "68", "shoulder": "44"}],
+  "sizes_cn": ["M", "L", "XL"],
+  "size_table": [],
   "description": "商品の特徴・素材・スタイルを日本語で50文字以内",
   "category": "トップス/パンツ/アウター/シューズ/アクセサリー/その他"
 }`;
 
-  const baseInstructions = `重要ルール:
-- name_jpは必ずメンズアパレルらしい魅力的な日本語名にしてください
-- colorsは{cn:中国語名, jp:日本語カタカナ名}の配列にしてください
-- size_tableはサイズ数値が確認できれば抽出、なければ空配列
-- 以下のJSON形式のみで回答（前後に何も書かない、コードブロックなし）:
-${jsonSchema}`;
+  const variantNote = `バリアント抽出ルール（最重要）:
+- 颜色（カラー）欄に「西装+裤子」「一件西装」のような【商品の種類の違い】があれば variants に分ける
+- 「黒色」「白色」のような【色の違いだけ】は variants ではなく colors に入れる
+- バリアントの例: セットアップ（西装+裤子）、ジャケット単体（一件西装）、パンツ単体（裤子）など
+- バリアントがない場合は variants を空配列にする
+- バリアント名は日本語で自然な名前にする`;
 
   let prompt;
   if (hasImage) {
-    prompt = `あなたはタオバオ商品画像の解析専門家です。添付のスクリーンショット画像から商品情報を読み取ってください。
+    prompt = `あなたはタオバオ商品ページの解析専門家です。
+この画像はタオバオの商品詳細ページのスクリーンショットです。
+画像から以下の情報を正確に読み取ってください：
+
+1. ページ上部の商品タイトル（中国語）
+2. 券后¥または优惠前の価格（元）
+3. 颜色（カラー/バリアント）の選択肢 ← 特に重要
+4. 尺码（サイズ）の選択肢
 
 ${url ? 'URL: ' + url : ''}
-${pageText ? '補足テキスト:\n' + pageText.slice(0, 4000) : ''}
+${pageText ? '補足テキスト:\n' + pageText.slice(0, 3000) : ''}
 
-画像から読み取れる情報（商品名・カラー・サイズ・価格・素材・サイズ表など）をすべて抽出してください。
-${baseInstructions}`;
+${variantNote}
+
+以下のJSON形式のみで回答（前後に何も書かない、コードブロックなし）:
+${jsonSchema}`;
   } else {
     prompt = `あなたはタオバオ商品情報の専門家です。以下の情報から商品データを抽出・生成してください。
 
@@ -2119,7 +2144,10 @@ URL: ${url || '（未入力）'}
 商品ページテキスト:
 ${pageText ? pageText.slice(0, 12000) : '（未入力）'}
 
-${baseInstructions}`;
+${variantNote}
+
+以下のJSON形式のみで回答（前後に何も書かない、コードブロックなし）:
+${jsonSchema}`;
   }
 
   try {
@@ -2146,7 +2174,10 @@ ${baseInstructions}`;
     }
 
     // OCRサイズ表があれば優先
-    if (ocrSizeTable && ocrSizeTable.length > 0) {
+    if (ocrSizeTable && (
+      (Array.isArray(ocrSizeTable) && ocrSizeTable.length > 0) ||
+      (!Array.isArray(ocrSizeTable) && (ocrSizeTable.tops?.length || ocrSizeTable.bottoms?.length || ocrSizeTable.unified?.length))
+    )) {
       parsed.size_table = ocrSizeTable;
     }
 
@@ -2235,6 +2266,23 @@ function renderAIResult(data) {
   document.getElementById('ai-name').value = data.name_jp || '';
   if (data.price_cny > 0) document.getElementById('ai-cost').value = data.price_cny;
   document.getElementById('ai-memo').value = data.description || '';
+
+  // バリアント（AI抽出）→ aiProductData.variants に格納
+  var aiVariants = aiProductData.variants || [];
+
+  // バリアント表示
+  var variantsSection = document.getElementById('ai-variants-section');
+  var variantsEl = document.getElementById('ai-variants');
+  if (aiVariants.length > 0 && variantsSection && variantsEl) {
+    variantsSection.style.display = 'block';
+    variantsEl.innerHTML = aiVariants.map(function(v) {
+      return '<span class="badge badge-yellow" style="font-size:12px;padding:4px 10px">🏷️ '
+        + (v.name || '') + (v.name_cn ? ' <span style="font-size:10px;opacity:0.7">(' + v.name_cn + ')</span>' : '')
+        + '</span>';
+    }).join('');
+  } else if (variantsSection) {
+    variantsSection.style.display = 'none';
+  }
 
   // カラー（中国語＋日本語）
   const colorsEl = document.getElementById('ai-colors');
@@ -2351,6 +2399,13 @@ async function registerAIProduct() {
   const url = document.getElementById('ai-url').value.trim();
 
   let fullMemo = memo;
+  // バリアントをmemoに保存
+  if (aiProductData.variants && aiProductData.variants.length > 0) {
+    var variantStr = aiProductData.variants.map(function(v) {
+      return v.name + (v.price_cny ? '' : '');
+    }).join(', ');
+    fullMemo += '\n【バリアント】' + variantStr;
+  }
   if (aiProductData.colors?.length > 0) {
     var colorStrs = aiProductData.colors.map(function(c) {
       if (typeof c === 'object') return (c.cn || '') + (c.jp && c.jp !== c.cn ? '|' + c.jp : '');
