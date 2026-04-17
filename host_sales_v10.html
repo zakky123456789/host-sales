@@ -2551,14 +2551,13 @@ function renderAIResult(data) {
 function renderSizeTable(sizeTable) {
   var el = document.getElementById('ai-sizetable');
   if (!sizeTable) {
-    el.innerHTML = '<span style="color:var(--muted)">サイズ表が取得できませんでした。上の「🔍 読み取り」ボタンでサイズ表画像から読み取れます。</span>';
+    el.innerHTML = '<span style="color:var(--muted)">サイズ表が取得できませんでした。</span>';
     return;
   }
 
   // 構造体形式 {tops, bottoms, unified} と旧来の配列形式の両対応
   var tops, bottoms, unified;
   if (Array.isArray(sizeTable)) {
-    // 旧形式（配列）：part フィールドで振り分け
     tops    = sizeTable.filter(function(r){ return r.part === '上'; });
     bottoms = sizeTable.filter(function(r){ return r.part === '下'; });
     unified = sizeTable.filter(function(r){ return !r.part; });
@@ -2568,6 +2567,20 @@ function renderSizeTable(sizeTable) {
     unified = sizeTable.unified || [];
   }
 
+  // 重複行を除去（sizeキーで同一行を判定）
+  function dedupRows(rows) {
+    var seen = {};
+    return rows.filter(function(r) {
+      var key = JSON.stringify(r);
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+  }
+  tops    = dedupRows(tops);
+  bottoms = dedupRows(bottoms);
+  unified = dedupRows(unified);
+
   var total = tops.length + bottoms.length + unified.length;
   if (total === 0) {
     el.innerHTML = '<span style="color:var(--muted)">サイズ表が取得できませんでした。</span>';
@@ -2575,40 +2588,43 @@ function renderSizeTable(sizeTable) {
   }
 
   var colLabels = {
-    size:'サイズ', length:'着丈(cm)', chest:'胸囲(cm)', shoulder:'肩幅(cm)',
-    sleeve:'袖丈(cm)', cuff:'袖口(cm)', waist:'ウエスト(cm)', hip:'ヒップ(cm)',
-    pants_length:'丈(cm)', hem:'裾幅(cm)', thigh:'太腿(cm)', inseam:'股下(cm)',
-    rise:'股上(cm)', width:'股幅(cm)'
+    size:'サイズ', length:'着丈(CM)', chest:'胸囲(CM)', shoulder:'肩幅(CM)',
+    sleeve:'袖丈(CM)', cuff:'袖口(CM)', waist:'ウエスト(CM)', hip:'ヒップ(CM)',
+    pants_length:'丈(CM)', hem:'裾幅(CM)', thigh:'太腿(CM)', inseam:'股下(CM)',
+    rise:'股上(CM)', width:'股幅(CM)'
   };
 
   function buildTable(rows, icon, label) {
     if (!rows || rows.length === 0) return '';
-    // この行群が持つ列だけ抽出（size以外）
+    // 列抽出（sizeとpart以外、かつ値がプリミティブのもののみ）
     var cols = [];
     rows.forEach(function(r) {
       Object.keys(r).forEach(function(k) {
-        if (k !== 'size' && k !== 'part' && cols.indexOf(k) === -1) {
-          var v = r[k];
-          if (typeof v !== 'object' || v === null) cols.push(k);
-        }
+        if (k === 'size' || k === 'part') return;
+        if (cols.indexOf(k) !== -1) return;
+        var v = r[k];
+        if (v === null || typeof v !== 'object') cols.push(k);
       });
     });
     var h = '';
-    if (icon) {
-      h += '<div style="font-size:12px;font-weight:700;color:var(--accent);padding:8px 0 6px;display:flex;align-items:center;gap:6px">'
+    if (label) {
+      h += '<div style="font-size:13px;font-weight:700;color:var(--accent);padding:10px 0 6px;display:flex;align-items:center;gap:6px">'
         + icon + ' ' + label + '</div>';
     }
-    h += '<table class="size-table" style="width:100%;margin-bottom:12px"><thead><tr>';
-    h += '<th>サイズ</th>';
-    cols.forEach(function(c) { h += '<th>' + (colLabels[c] || c) + '</th>'; });
+    h += '<table class="size-table" style="width:100%;margin-bottom:16px;border-collapse:collapse"><thead><tr>';
+    h += '<th style="text-align:center;padding:8px 12px;background:var(--surface);color:var(--muted);font-size:12px;font-weight:600;border-bottom:1px solid var(--border)">サイズ</th>';
+    cols.forEach(function(c) {
+      h += '<th style="text-align:center;padding:8px 12px;background:var(--surface);color:var(--muted);font-size:12px;font-weight:600;border-bottom:1px solid var(--border)">' + (colLabels[c] || c) + '</th>';
+    });
     h += '</tr></thead><tbody>';
-    rows.forEach(function(row) {
-      h += '<tr><td style="font-weight:700;color:var(--accent)">' + (row.size || '-') + '</td>';
+    rows.forEach(function(row, ri) {
+      var bg = ri % 2 === 0 ? 'var(--bg)' : 'var(--surface)';
+      h += '<tr style="background:' + bg + '">';
+      h += '<td style="text-align:center;padding:8px 12px;font-weight:700;color:var(--accent);font-size:13px">' + (row.size || '-') + '</td>';
       cols.forEach(function(c) {
-        var cellVal = row[c];
-        if (cellVal === undefined || cellVal === null) cellVal = '-';
-        else if (typeof cellVal === 'object') cellVal = JSON.stringify(cellVal);
-        h += '<td>' + cellVal + '</td>';
+        var v = row[c];
+        if (v === undefined || v === null) v = '-';
+        h += '<td style="text-align:center;padding:8px 12px;font-size:13px">' + v + '</td>';
       });
       h += '</tr>';
     });
