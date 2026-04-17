@@ -247,6 +247,12 @@
                 <option value="">選択してください</option>
               </select>
             </div>
+            <div class="form-group" id="o-variant-wrap" style="display:none">
+              <label>バリアント（種類）</label>
+              <select id="o-variant" onchange="onVariantChange()">
+                <option value="">選択してください</option>
+              </select>
+            </div>
             <div class="form-group">
               <label>数量</label>
               <input id="o-qty" type="number" value="1" min="1" oninput="updateOrderPreview()">
@@ -979,6 +985,111 @@ let state = {
 
 // ===== ユーティリティ =====
 const fmt = n => Math.round(n).toLocaleString('ja-JP');
+// ===== バリアント関連ユーティリティ =====
+// "名前|価格, 名前|価格" をパース → [{name, price}]
+function parseVariants(str) {
+  if (!str) return [];
+  return str.split(',').map(function(s) {
+    s = s.trim();
+    if (!s) return null;
+    var parts = s.split('|');
+    return { name: parts[0].trim(), price: parts[1] ? parseInt(parts[1].trim()) || 0 : 0 };
+  }).filter(Boolean);
+}
+
+// バリアント行のHTML生成（編集フォーム用）
+function buildVariantRows(pid, variantStr) {
+  var variants = parseVariants(variantStr);
+  if (variants.length === 0) {
+    return '<div class="variant-row" style="display:flex;gap:6px;margin-bottom:4px">'
+      + '<input class="vr-name" placeholder="例：セットアップ" style="flex:2;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">'
+      + '<input class="vr-price" type="number" placeholder="価格（円）" style="flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">'
+      + '<button type="button" onclick="removeVariantRow(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button>'
+      + '</div>';
+  }
+  return variants.map(function(v) {
+    return '<div class="variant-row" style="display:flex;gap:6px;margin-bottom:4px">'
+      + '<input class="vr-name" value="' + htmlEscape(v.name) + '" placeholder="例：セットアップ" style="flex:2;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">'
+      + '<input class="vr-price" type="number" value="' + (v.price || '') + '" placeholder="価格（円）" style="flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">'
+      + '<button type="button" onclick="removeVariantRow(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button>'
+      + '</div>';
+  }).join('');
+}
+
+function addVariantRow(pid) {
+  var container = document.getElementById('pei-variants-' + pid);
+  if (!container) return;
+  var div = document.createElement('div');
+  div.className = 'variant-row';
+  div.style.cssText = 'display:flex;gap:6px;margin-bottom:4px';
+  div.innerHTML = '<input class="vr-name" placeholder="例：ジャケット単体" style="flex:2;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">'
+    + '<input class="vr-price" type="number" placeholder="価格（円）" style="flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">'
+    + '<button type="button" onclick="removeVariantRow(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button>';
+  container.appendChild(div);
+}
+
+function removeVariantRow(btn) {
+  btn.closest('.variant-row').remove();
+}
+
+// バリアント行から文字列生成
+function collectVariants(pid) {
+  var container = document.getElementById('pei-variants-' + pid);
+  if (!container) return '';
+  var rows = container.querySelectorAll('.variant-row');
+  var parts = [];
+  rows.forEach(function(row) {
+    var name  = row.querySelector('.vr-name').value.trim();
+    var price = row.querySelector('.vr-price').value.trim();
+    if (name) parts.push(name + (price ? '|' + price : ''));
+  });
+  return parts.join(', ');
+}
+
+// ===== バリアント関連ユーティリティ =====
+function parseVariants(str) {
+  if (!str) return [];
+  return str.split(',').map(function(s) {
+    s = s.trim(); if (!s) return null;
+    var parts = s.split('|');
+    return { name: parts[0].trim(), price: parts[1] ? parseInt(parts[1].trim()) || 0 : 0 };
+  }).filter(Boolean);
+}
+function buildVariantRows(pid, variantStr) {
+  var variants = parseVariants(variantStr);
+  if (variants.length === 0) {
+    return '<div class="variant-row" style="display:flex;gap:6px;margin-bottom:4px">'
+      + '<input class="vr-name" placeholder="例：セットアップ" style="flex:2;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">'
+      + '<input class="vr-price" type="number" placeholder="価格（円）" style="flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">'
+      + '<button type="button" onclick="removeVariantRow(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button></div>';
+  }
+  return variants.map(function(v) {
+    return '<div class="variant-row" style="display:flex;gap:6px;margin-bottom:4px">'
+      + '<input class="vr-name" value="' + htmlEscape(v.name) + '" placeholder="例：セットアップ" style="flex:2;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">'
+      + '<input class="vr-price" type="number" value="' + (v.price || '') + '" placeholder="価格（円）" style="flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">'
+      + '<button type="button" onclick="removeVariantRow(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button></div>';
+  }).join('');
+}
+function addVariantRow(pid) {
+  var c = document.getElementById('pei-variants-' + pid); if (!c) return;
+  var div = document.createElement('div'); div.className = 'variant-row'; div.style.cssText = 'display:flex;gap:6px;margin-bottom:4px';
+  div.innerHTML = '<input class="vr-name" placeholder="例：ジャケット単体" style="flex:2;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">'
+    + '<input class="vr-price" type="number" placeholder="価格（円）" style="flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">'
+    + '<button type="button" onclick="removeVariantRow(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button>';
+  c.appendChild(div);
+}
+function removeVariantRow(btn) { btn.closest('.variant-row').remove(); }
+function collectVariants(pid) {
+  var c = document.getElementById('pei-variants-' + pid); if (!c) return '';
+  var parts = [];
+  c.querySelectorAll('.variant-row').forEach(function(row) {
+    var name = row.querySelector('.vr-name').value.trim();
+    var price = row.querySelector('.vr-price').value.trim();
+    if (name) parts.push(name + (price ? '|' + price : ''));
+  });
+  return parts.join(', ');
+}
+
 function productImgError(img) {
   img.style.display = 'none';
   img.parentElement.innerHTML = '👕';
@@ -1222,7 +1333,9 @@ function renderDashboard() {
       const p = getProduct(o.productId);
       const st = getOrderStatus(o);
       html += '<tr><td><strong>' + (h?.name||'?') + '</strong></td>'
-        + '<td>' + (p?.name||'?') + '</td>'
+        + '<td>' + (p?.name||'?')
+        + (o.note && o.note.match(/^\[(.+?)\]/) ? '<br><span style="font-size:11px;color:var(--yellow);font-weight:600">' + o.note.match(/^\[(.+?)\]/)[1] + '</span>' : '')
+        + '</td>'
         + '<td class="num">' + o.qty + '</td>'
         + '<td><span class="badge ' + st.cls + '">' + st.label + '</span></td></tr>';
     });
@@ -1244,9 +1357,35 @@ function renderDashboard() {
 }
 // ===== 受注 =====
 function onProductChange() {
-  const pid = parseInt(document.getElementById('o-product').value);
-  const p = getProduct(pid);
-  if (p) document.getElementById('o-price').value = p.priceJpy || '';
+  var pid = parseInt(document.getElementById('o-product').value);
+  var p = getProduct(pid);
+  var variantWrap = document.getElementById('o-variant-wrap');
+  var variantSel  = document.getElementById('o-variant');
+  if (p) {
+    var variantMatch = p.memo ? p.memo.match(/【バリアント】([^\n]*)/) : null;
+    var variants = variantMatch ? parseVariants(variantMatch[1]) : [];
+    if (variants.length > 0) {
+      variantSel.innerHTML = '<option value="">選択してください</option>'
+        + variants.map(function(v) {
+            return '<option value="' + htmlEscape(v.name) + '" data-price="' + (v.price||0) + '">' + htmlEscape(v.name) + (v.price ? ' ¥' + v.price.toLocaleString() : '') + '</option>';
+          }).join('');
+      variantWrap.style.display = 'block';
+      document.getElementById('o-price').value = '';
+    } else {
+      variantWrap.style.display = 'none';
+      variantSel.innerHTML = '<option value="">選択してください</option>';
+      document.getElementById('o-price').value = p.priceJpy || '';
+    }
+  } else {
+    variantWrap.style.display = 'none';
+  }
+  updateOrderPreview();
+}
+function onVariantChange() {
+  var sel = document.getElementById('o-variant');
+  var opt = sel.options[sel.selectedIndex];
+  var price = opt ? parseInt(opt.getAttribute('data-price')) || 0 : 0;
+  if (price) document.getElementById('o-price').value = price;
   updateOrderPreview();
 }
 
@@ -1276,6 +1415,11 @@ async function addOrder() {
   const date = document.getElementById('o-date').value;
   const address = document.getElementById('o-address').value.trim();
   const note = document.getElementById('o-note').value.trim();
+  const variantName = (function() {
+    var sel = document.getElementById('o-variant');
+    return sel && sel.value ? sel.value : '';
+  })();
+  const fullNote = variantName ? ('[' + variantName + ']' + (note ? ' ' + note : '')) : note;
 
   if (!hostId || !productId || !date) { alert('ホスト・商品・受注日は必須です'); return; }
 
@@ -1286,15 +1430,17 @@ async function addOrder() {
   const id = state.nextId++;
   const rec = { id, hostId, productId, qty, unitPriceJpy: unitPrice, receivedJpy: received,
     orderDate: date, buckyOrdered: false, buckyOrderedAt: null, shipped: false, shippedAt: null,
-    deliveryAddress: finalAddress, note, y, m };
+    deliveryAddress: finalAddress, note: fullNote, y, m };
   state.orders.push(rec);
   await dbSave('orders', { id, host_id: hostId, product_id: productId, qty, unit_price_jpy: unitPrice,
     received_jpy: received, order_date: date, bucky_ordered: false, bucky_ordered_at: null,
-    shipped: false, shipped_at: null, delivery_address: finalAddress, note, y, m });
+    shipped: false, shipped_at: null, delivery_address: finalAddress, note: fullNote, y, m });
 
   // フォームリセット
   document.getElementById('o-host').value = '';
   document.getElementById('o-product').value = '';
+  document.getElementById('o-variant').innerHTML = '<option value="">選択してください</option>';
+  document.getElementById('o-variant-wrap').style.display = 'none';
   document.getElementById('o-qty').value = '1';
   document.getElementById('o-price').value = '';
   document.getElementById('o-received').value = '';
@@ -1333,7 +1479,7 @@ function renderOrders() {
       + '<td style="font-size:12px;color:var(--muted)">' + o.orderDate + '</td>'
       + '<td><strong>' + (h?.name||'?') + '</strong></td>'
       + '<td style="font-size:12px;color:var(--muted)">' + (shop?.name||'-') + '</td>'
-      + '<td>' + (p?.name||'?') + '</td>'
+      + '<td>' + (p?.name||'?') + (o.note && o.note.match(/^\[(.+?)\]/) ? '<br><span style="font-size:11px;color:var(--yellow);font-weight:600">' + o.note.match(/^\[(.+?)\]/)[1] + '</span>' : '') + '</td>'
       + '<td class="num">' + o.qty + '</td>'
       + '<td class="num" style="color:var(--accent)">' + yen(o.unitPriceJpy * o.qty) + '</td>'
       + '<td class="num" style="color:var(--green)">' + yen(o.receivedJpy) + '</td>'
@@ -2253,12 +2399,23 @@ function renderProducts() {
   }
   var html = '';
   state.products.forEach(function(p) {
-    var colorMatch = p.memo ? p.memo.match(/【カラー】([^\n]*)/) : null;
-    var sizeMatch  = p.memo ? p.memo.match(/【サイズ】([^\n]*)/) : null;
+    var colorMatch   = p.memo ? p.memo.match(/【カラー】([^\n]*)/) : null;
+    var sizeMatch    = p.memo ? p.memo.match(/【サイズ】([^\n]*)/) : null;
+    var variantMatch = p.memo ? p.memo.match(/【バリアント】([^\n]*)/) : null;
     var colors = colorMatch ? colorMatch[1].split('、').filter(Boolean) : [];
     var sizes  = sizeMatch  ? sizeMatch[1].split('、').filter(Boolean) : [];
+    var variantVal = variantMatch ? variantMatch[1] : '';
     var hasSizeTable = p.memo ? p.memo.indexOf('【サイズ表】') !== -1 : false;
 
+    var variants = parseVariants(variantVal);
+    var variantHtml = '';
+    if (variants.length > 0) {
+      variantHtml = '<div style="margin-bottom:6px;display:flex;gap:4px;flex-wrap:wrap">';
+      variants.forEach(function(v) {
+        variantHtml += '<span class="product-tag" style="background:rgba(251,191,36,0.12);color:var(--yellow);border:1px solid rgba(251,191,36,0.3)">🏷️ ' + htmlEscape(v.name) + (v.price ? ' <span style="font-size:10px">¥' + v.price + '</span>' : '') + '</span>';
+      });
+      variantHtml += '</div>';
+    }
     var colorHtml = '';
     if (colors.length > 0) {
       colorHtml = '<div style="margin-bottom:6px;display:flex;gap:4px;flex-wrap:wrap">';
@@ -2296,6 +2453,7 @@ function renderProducts() {
     var cleanMemo = (p.memo || '')
       .replace(/【カラー】[^\n]*/g, '')
       .replace(/【サイズ】[^\n]*/g, '')
+      .replace(/【バリアント】[^\n]*/g, '')
       .replace(/【サイズ表】[\s\S]*/g, '')
       .trim();
 
@@ -2320,7 +2478,7 @@ function renderProducts() {
       + '<span style="color:var(--yellow)">仕入: ' + (p.costCny > 0 ? p.costCny + '元' : '-') + '</span>'
       + '<span style="color:var(--accent)">販売: ' + (p.priceJpy > 0 ? yen(p.priceJpy) : '-') + '</span>'
       + profitHtml + '</div>'
-      + colorHtml + sizeHtml + urlHtml
+      + variantHtml + colorHtml + sizeHtml + urlHtml
       + '</div>'
       + '<div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end">'
       + '<button class="btn btn-sm btn-ghost" data-action="edit" data-id="' + p.id + '">編集</button>'
@@ -2339,6 +2497,7 @@ function renderProducts() {
       + '<div class="form-group" style="margin-bottom:12px"><label>タオバオURL</label><input id="pei-url-' + p.id + '" value="' + htmlEscape(p.taobaoUrl || '') + '"></div>'
       + '<div class="form-group" style="margin-bottom:12px"><label>商品画像URL（空欄で変更なし）</label><input id="pei-imgurl-' + p.id + '" value="' + htmlEscape(p.imageUrl || '') + '" placeholder="https://img.alicdn.com/..."></div>'
       + '<div class="form-grid form-grid-2" style="margin-bottom:12px">'
+      + '<div class="form-group" style="grid-column:span 2">' + '<label style="display:flex;align-items:center;justify-content:space-between">' + '<span>バリアント（選択肢）<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:6px">例: セットアップ|5800, ジャケット単体|3800</span></span>' + '<button type="button" onclick="addVariantRow(' + p.id + ')" class="btn btn-sm btn-ghost" style="font-size:11px">＋ 追加</button>' + '</label>' + '<div id="pei-variants-' + p.id + '" style="display:flex;flex-direction:column;gap:6px;margin-top:4px">' + buildVariantRows(p.id, variantVal) + '</div></div>'
       + '<div class="form-group"><label>カラー（カンマ区切り・例: 黒色|ブラック, 白色|ホワイト）</label><input id="pei-colors-' + p.id + '" value="' + htmlEscape(colorVal) + '"></div>'
       + '<div class="form-group"><label>サイズ（カンマ区切り・例: S, M, L, XL）</label><input id="pei-sizes-' + p.id + '" value="' + htmlEscape(sizeVal) + '"></div>'
       + '</div>'
@@ -2383,10 +2542,11 @@ async function saveProductInline(id) {
   var costCny  = parseFloat(document.getElementById('pei-cost-' + id).value) || 0;
   var priceJpy = parseFloat(document.getElementById('pei-price-' + id).value) || 0;
   var url      = document.getElementById('pei-url-' + id).value.trim();
-  var colorsRaw = document.getElementById('pei-colors-' + id).value.trim();
-  var sizesRaw  = document.getElementById('pei-sizes-' + id).value.trim();
-  var memo      = document.getElementById('pei-memo-' + id).value.trim();
-  var active    = document.getElementById('pei-active-' + id).value === 'true';
+  var colorsRaw  = document.getElementById('pei-colors-' + id).value.trim();
+  var sizesRaw   = document.getElementById('pei-sizes-' + id).value.trim();
+  var variantsRaw = collectVariants(id);
+  var memo       = document.getElementById('pei-memo-' + id).value.trim();
+  var active     = document.getElementById('pei-active-' + id).value === 'true';
 
   var idx = state.products.findIndex(function(x) { return x.id === id; });
   var oldMemo = idx !== -1 ? (state.products[idx].memo || '') : '';
@@ -2394,6 +2554,7 @@ async function saveProductInline(id) {
   var sizeTablePart  = sizeTableMatch ? sizeTableMatch[0] : '';
 
   var fullMemo = memo;
+  if (variantsRaw) fullMemo += '\n【バリアント】' + variantsRaw;
   if (colorsRaw) {
     var colorArr = colorsRaw.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
     fullMemo += '\n【カラー】' + colorArr.join('、');
