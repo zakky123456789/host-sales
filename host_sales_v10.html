@@ -234,58 +234,38 @@
           <span id="order-form-icon" style="color:var(--muted);font-size:12px">▼ 開く</span>
         </div>
         <div id="order-form" style="display:none;padding:20px">
-          <div class="form-grid form-grid-4">
+          <!-- ホスト・日付・住所（共通） -->
+          <div class="form-grid form-grid-4" style="margin-bottom:12px">
             <div class="form-group">
               <label>ホスト <span style="color:var(--red)">*</span></label>
-              <select id="o-host">
+              <select id="o-host" onchange="onHostChange()">
                 <option value="">選択してください</option>
               </select>
             </div>
             <div class="form-group">
-              <label>商品 <span style="color:var(--red)">*</span></label>
-              <select id="o-product" onchange="onProductChange()">
-                <option value="">選択してください</option>
-              </select>
-            </div>
-            <div class="form-group" id="o-variant-wrap" style="display:none">
-              <label>バリアント（種類）</label>
-              <select id="o-variant" onchange="onVariantChange()">
-                <option value="">選択してください</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>数量</label>
-              <input id="o-qty" type="number" value="1" min="1" oninput="updateOrderPreview()">
-            </div>
-            <div class="form-group">
-              <label>販売単価（円）</label>
-              <input id="o-price" type="number" placeholder="自動入力" oninput="updateOrderPreview()">
-            </div>
-          </div>
-          <div class="form-grid form-grid-4">
-            <div class="form-group">
-              <label>受注日</label>
+              <label>受注日 <span style="color:var(--red)">*</span></label>
               <input id="o-date" type="date">
             </div>
             <div class="form-group">
-              <label>現金受取額（円）</label>
+              <label>現金受取額（円）合計</label>
               <input id="o-received" type="number" placeholder="受取済み金額" oninput="updateOrderPreview()">
             </div>
-            <div class="form-group" style="grid-column:span 2">
-              <label>配送先住所（空欄=ホスト登録住所を使用）</label>
+            <div class="form-group">
+              <label>配送先住所（空欄=ホスト住所）</label>
               <input id="o-address" placeholder="ホスト登録の住所を使う場合は空欄">
             </div>
           </div>
-          <div class="form-group" style="margin-bottom:16px">
-            <label>備考</label>
-            <input id="o-note" placeholder="メモ">
-          </div>
+
+          <!-- 商品明細リスト -->
+          <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em">商品明細</div>
+          <div id="order-items-list"></div>
+          <button class="btn btn-sm btn-ghost" onclick="addOrderItem()" style="margin-bottom:16px;font-size:12px">＋ 商品を追加</button>
+
           <!-- プレビュー -->
           <div id="order-preview" style="display:none;margin-bottom:16px" class="sim-box">
             <div style="font-size:12px;color:var(--muted);margin-bottom:8px">受注プレビュー</div>
             <div class="sim-row"><div class="sim-label">販売金額合計</div><div id="op-total" style="font-family:var(--mono);color:var(--accent)"></div></div>
-            <div class="sim-row"><div class="sim-label">仕入れ原価（参考）</div><div id="op-cost" style="font-family:var(--mono);color:var(--muted)"></div></div>
-            <div class="sim-row total"><div>粗利（参考）</div><div id="op-profit" style="font-family:var(--mono)"></div></div>
+            <div class="sim-row total"><div>現金受取</div><div id="op-profit" style="font-family:var(--mono)"></div></div>
           </div>
           <button class="btn btn-primary" onclick="addOrder()">✅ 受注登録</button>
         </div>
@@ -295,8 +275,10 @@
       <div class="table-wrap">
         <div class="table-header">
           <div class="table-title">受注一覧</div>
-          <div style="display:flex;gap:8px">
-            <select id="order-filter-status" onchange="renderOrders()" style="width:120px;padding:4px 8px;font-size:12px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="order-search" placeholder="🔍 ホスト・商品名で検索" oninput="renderOrders()"
+              style="padding:4px 10px;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);width:180px">
+            <select id="order-filter-status" onchange="renderOrders()" style="width:110px;padding:4px 8px;font-size:12px">
               <option value="">全て</option>
               <option value="pending">未発注</option>
               <option value="ordered">発注済</option>
@@ -314,6 +296,7 @@
               <th class="num">数量</th>
               <th class="num">販売額</th>
               <th class="num">現金受取</th>
+              <th>追跡番号</th>
               <th>状態</th>
               <th>操作</th>
             </tr>
@@ -785,7 +768,7 @@
 
 <!-- 受注編集モーダル -->
 <div id="order-edit-modal" class="modal" onclick="if(event.target===this)closeOrderEditModal()">
-  <div class="modal-box">
+  <div class="modal-box" style="max-width:620px">
     <div class="modal-title">受注を編集</div>
     <input type="hidden" id="oe-id">
     <div class="form-grid form-grid-2" style="margin-bottom:14px">
@@ -799,8 +782,32 @@
       <div class="form-group"><label>受注日</label><input id="oe-date" type="date"></div>
     </div>
     <div class="form-group" style="margin-bottom:14px"><label>配送先住所</label><input id="oe-address"></div>
-    <div class="form-group" style="margin-bottom:14px"><label>BuckyDrop発注日</label><input id="oe-bucky-date" type="date"></div>
-    <div class="form-group" style="margin-bottom:14px"><label>発送日</label><input id="oe-shipped-date" type="date"></div>
+    <div class="form-grid form-grid-2" style="margin-bottom:14px">
+      <div class="form-group"><label>BuckyDrop発注日</label><input id="oe-bucky-date" type="date"></div>
+      <div class="form-group"><label>発送日</label><input id="oe-shipped-date" type="date"></div>
+    </div>
+    <!-- 追跡番号 -->
+    <div class="form-group" style="margin-bottom:14px">
+      <label>追跡番号 <span style="font-size:10px;color:var(--muted);font-weight:400">入力で自動ステータス更新</span></label>
+      <input id="oe-tracking" placeholder="例：JP1234567890" oninput="onTrackingInput()">
+    </div>
+    <!-- 費用内訳 -->
+    <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em">費用内訳（任意）</div>
+    <div class="form-grid form-grid-3" style="margin-bottom:8px">
+      <div class="form-group"><label>国際送料（円）</label><input id="oe-intl-ship" type="number" placeholder="0" oninput="updateOEProfit()"></div>
+      <div class="form-group"><label>代行手数料（円）</label><input id="oe-agent-fee" type="number" placeholder="0" oninput="updateOEProfit()"></div>
+      <div class="form-group"><label>その他手数料（円）</label><input id="oe-other-fee" type="number" placeholder="0" oninput="updateOEProfit()"></div>
+    </div>
+    <!-- 利益プレビュー -->
+    <div id="oe-profit-box" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px">
+      <div style="font-weight:600;color:var(--muted);margin-bottom:8px">利益シミュレーション</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+        <div style="text-align:center"><div style="color:var(--muted);font-size:10px;margin-bottom:2px">販売額</div><div id="oe-pb-sales" style="font-family:var(--mono);color:var(--accent);font-weight:700"></div></div>
+        <div style="text-align:center"><div style="color:var(--muted);font-size:10px;margin-bottom:2px">費用合計</div><div id="oe-pb-cost" style="font-family:var(--mono);color:var(--red);font-weight:700"></div></div>
+        <div style="text-align:center"><div style="color:var(--muted);font-size:10px;margin-bottom:2px">利益</div><div id="oe-pb-profit" style="font-family:var(--mono);font-weight:700"></div></div>
+        <div style="text-align:center"><div style="color:var(--muted);font-size:10px;margin-bottom:2px">利益率</div><div id="oe-pb-margin" style="font-family:var(--mono);font-weight:700"></div></div>
+      </div>
+    </div>
     <div class="form-group" style="margin-bottom:20px"><label>備考</label><input id="oe-note"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button class="btn btn-danger btn-sm" onclick="deleteOrder()">削除</button>
@@ -1141,7 +1148,12 @@ async function fetchAll(table, orderCol) {
 
 async function dbSave(table, row) {
   const { error } = await sb.from(table).upsert(row, { onConflict: 'id' });
-  if (error) { console.error('DB save error:', table, error); showSyncStatus('error'); return false; }
+  if (error) {
+    console.error('DB save error:', table, error);
+    showSyncStatus('error');
+    alert('⚠️ 保存に失敗しました\n' + (error.message || JSON.stringify(error)));
+    return false;
+  }
   showSyncStatus('ok');
   return true;
 }
@@ -1183,6 +1195,8 @@ async function loadFromDB() {
         orderDate: r.order_date||'', buckyOrdered: r.bucky_ordered||false,
         buckyOrderedAt: r.bucky_ordered_at||'', shipped: r.shipped||false,
         shippedAt: r.shipped_at||'', deliveryAddress: r.delivery_address||'',
+        trackingNumber: r.note ? (function(n){ var m2 = n.match(/\[追跡:([^\]]+)\]/); return m2 ? m2[1] : ''; })(r.note) : '',
+        intlShipping: 0, agentFee: 0, otherFee: 0,
         note: r.note||'', y: r.y, m: r.m
       }));
     }
@@ -1221,6 +1235,7 @@ async function loadFromDB() {
 
 // ===== ナビ =====
 function showPage(id) {
+  if (id === 'page-orders') { setTimeout(initOrderForm, 50); }
   document.querySelector('.sidebar')?.classList.remove('open');
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1363,140 +1378,205 @@ function renderDashboard() {
     document.getElementById('dash-exp').innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--muted);padding:20px">経費データなし</td></tr>';
   } else {
     let html = '';
-    catEntries.forEach(([cat,amt]) => {
-      html += '<tr><td>' + catBadge(cat) + '</td><td class="num">' + yen(amt) + '</td></tr>';
+    catEntries.forEach(function(entry) {
+      html += '<tr><td>' + catBadge(entry[0]) + '</td><td class="num">' + yen(entry[1]) + '</td></tr>';
     });
     document.getElementById('dash-exp').innerHTML = html;
   }
 }
 // ===== 受注 =====
-function onProductChange() {
-  var pid = parseInt(document.getElementById('o-product').value);
-  var p = getProduct(pid);
-  var variantWrap = document.getElementById('o-variant-wrap');
-  var variantSel  = document.getElementById('o-variant');
-  if (p) {
-    var variantMatch = p.memo ? p.memo.match(/【バリアント】([^\n]*)/) : null;
-    var variants = variantMatch ? parseVariants(variantMatch[1]) : [];
-    if (variants.length > 0) {
-      variantSel.innerHTML = '<option value="">選択してください</option>'
-        + variants.map(function(v) {
-            return '<option value="' + htmlEscape(v.name) + '" data-price="' + (v.price||0) + '">' + htmlEscape(v.name) + (v.price ? ' ¥' + v.price.toLocaleString() : '') + '</option>';
-          }).join('');
-      variantWrap.style.display = 'block';
-      document.getElementById('o-price').value = '';
-    } else {
-      variantWrap.style.display = 'none';
-      variantSel.innerHTML = '<option value="">選択してください</option>';
-      document.getElementById('o-price').value = p.priceJpy || '';
-    }
-  } else {
-    variantWrap.style.display = 'none';
-  }
+function onHostChange() { updateOrderPreview(); }
+
+// ===== 受注フォーム：複数商品明細 =====
+var orderItems = [];
+
+function addOrderItem() {
+  orderItems.push({ productId: 0, variantName: '', qty: 1, price: 0 });
+  renderOrderItemsList();
+}
+
+function removeOrderItem(idx) {
+  orderItems.splice(idx, 1);
+  if (orderItems.length === 0) orderItems.push({ productId: 0, variantName: '', qty: 1, price: 0 });
+  renderOrderItemsList();
   updateOrderPreview();
 }
-function onVariantChange() {
-  var sel = document.getElementById('o-variant');
-  var opt = sel.options[sel.selectedIndex];
-  var price = opt ? parseInt(opt.getAttribute('data-price')) || 0 : 0;
-  if (price) document.getElementById('o-price').value = price;
+
+function renderOrderItemsList() {
+  var el = document.getElementById('order-items-list');
+  if (!el) return;
+  if (orderItems.length === 0) orderItems.push({ productId: 0, variantName: '', qty: 1, price: 0 });
+  var html = '';
+  orderItems.forEach(function(item, idx) {
+    var variantHtml = '';
+    if (item.productId) {
+      var p2 = getProduct(item.productId);
+      if (p2 && p2.memo) {
+        var vm = p2.memo.match(/\u300cバリアント\u300d([^\n]*)/);
+        if (!vm) vm = p2.memo.match(/【バリアント】([^\n]*)/);
+        if (vm) {
+          var vs = parseVariants(vm[1]);
+          if (vs.length > 0) {
+            variantHtml = '<div style="flex:1;min-width:110px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">バリアント</div>'
+              + '<select data-idx="' + idx + '" onchange="onOIVariantChange(' + idx + ',this.value)" style="width:100%">'
+              + '<option value="">バリアント選択</option>'
+              + vs.map(function(v) {
+                  return '<option value="' + htmlEscape(v.name) + '"' + (item.variantName === v.name ? ' selected' : '') + '>'
+                    + htmlEscape(v.name) + (v.price ? ' ¥' + v.price.toLocaleString() + '（参考）' : '') + '</option>';
+                }).join('') + '</select></div>';
+          }
+        }
+      }
+    }
+    html += '<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">'
+      + '<div style="flex:2;min-width:160px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">商品 <span style="color:var(--red)">*</span></div>'
+      + '<select data-idx="' + idx + '" onchange="onOIProductChange(' + idx + ',this.value)" style="width:100%">'
+      + '<option value="">選択してください</option>'
+      + state.products.filter(function(p3){ return p3.active; }).map(function(p3) {
+          return '<option value="' + p3.id + '"' + (item.productId === p3.id ? ' selected' : '') + '>' + htmlEscape(p3.name) + '</option>';
+        }).join('') + '</select></div>'
+      + variantHtml
+      + '<div style="width:65px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">数量</div>'
+      + '<input type="number" value="' + item.qty + '" min="1" style="width:100%" oninput="onOIQtyChange(' + idx + ',this.value)"></div>'
+      + '<div style="width:110px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">販売単価（円）</div>'
+      + '<input type="number" value="' + (item.price || '') + '" placeholder="手動入力" style="width:100%" oninput="onOIPriceChange(' + idx + ',this.value)"></div>'
+      + '<div style="width:86px;text-align:right"><div style="font-size:10px;color:var(--muted);margin-bottom:4px">小計</div>'
+      + '<div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">' + yen(item.qty * item.price) + '</div></div>'
+      + (orderItems.length > 1
+          ? '<button class="btn btn-sm btn-ghost" onclick="removeOrderItem(' + idx + ')" style="padding:4px 8px;align-self:center;flex-shrink:0">✕</button>'
+          : '<div style="width:32px"></div>')
+      + '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function onOIProductChange(idx, val) {
+  orderItems[idx].productId = parseInt(val) || 0;
+  orderItems[idx].variantName = '';
+  renderOrderItemsList();
   updateOrderPreview();
+}
+function onOIVariantChange(idx, val) {
+  orderItems[idx].variantName = val;
+  updateOrderPreview();
+}
+function onOIQtyChange(idx, val) {
+  orderItems[idx].qty = parseInt(val) || 1;
+  updateOrderPreview();
+  renderOrderItemsList();
+}
+function onOIPriceChange(idx, val) {
+  orderItems[idx].price = parseFloat(val) || 0;
+  updateOrderPreview();
+  renderOrderItemsList();
 }
 
 function updateOrderPreview() {
-  const qty = parseInt(document.getElementById('o-qty')?.value) || 0;
-  const price = parseFloat(document.getElementById('o-price')?.value) || 0;
-  const received = parseFloat(document.getElementById('o-received')?.value) || 0;
-  const pid = parseInt(document.getElementById('o-product')?.value);
-  const p = getProduct(pid);
-  if (!qty || !price) { document.getElementById('order-preview').style.display='none'; return; }
-  const total = qty * price;
-  const cost = p ? qty * p.costCny * 20 : 0; // 概算：1元≒20円
-  const profit = total - cost;
-  document.getElementById('order-preview').style.display = 'block';
-  document.getElementById('op-total').textContent = yen(total);
-  document.getElementById('op-cost').textContent = p ? (p.costCny * qty) + '元（≒' + yen(cost) + '）' : '商品未選択';
-  document.getElementById('op-profit').textContent = yen(profit);
-  document.getElementById('op-profit').style.color = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  var total = 0;
+  orderItems.forEach(function(item) { total += item.qty * item.price; });
+  var received = parseFloat(document.getElementById('o-received') ? document.getElementById('o-received').value : 0) || 0;
+  if (total <= 0) { if (document.getElementById('order-preview')) document.getElementById('order-preview').style.display = 'none'; return; }
+  if (document.getElementById('order-preview')) document.getElementById('order-preview').style.display = 'block';
+  if (document.getElementById('op-total')) document.getElementById('op-total').textContent = yen(total);
+  if (document.getElementById('op-profit')) {
+    document.getElementById('op-profit').textContent = yen(received);
+    document.getElementById('op-profit').style.color = 'var(--green)';
+  }
 }
 
 async function addOrder() {
-  const hostId = parseInt(document.getElementById('o-host').value);
-  const productId = parseInt(document.getElementById('o-product').value);
-  const qty = parseInt(document.getElementById('o-qty').value) || 1;
-  const unitPrice = parseFloat(document.getElementById('o-price').value) || 0;
-  const received = parseFloat(document.getElementById('o-received').value) || 0;
-  const date = document.getElementById('o-date').value;
-  const address = document.getElementById('o-address').value.trim();
-  const note = document.getElementById('o-note').value.trim();
-  const variantName = (function() {
-    var sel = document.getElementById('o-variant');
-    return sel && sel.value ? sel.value : '';
-  })();
-  const fullNote = variantName ? ('[' + variantName + ']' + (note ? ' ' + note : '')) : note;
+  var hostId = parseInt(document.getElementById('o-host').value);
+  var date = document.getElementById('o-date').value;
+  var received = parseFloat(document.getElementById('o-received').value) || 0;
+  var address = document.getElementById('o-address').value.trim();
 
-  if (!hostId || !productId || !date) { alert('ホスト・商品・受注日は必須です'); return; }
+  if (!hostId || !date) { alert('ホストと受注日は必須です'); return; }
+  var validItems = orderItems.filter(function(item) { return item.productId > 0; });
+  if (validItems.length === 0) { alert('商品を1つ以上選択してください'); return; }
 
-  const host = getHost(hostId);
-  const finalAddress = address || host?.deliveryAddress || '';
-  const [y, m] = date.split('-').map(Number);
+  var host = getHost(hostId);
+  var finalAddress = address || (host ? host.deliveryAddress : '') || '';
+  var ym = date.split('-').map(Number);
+  var y = ym[0], m = ym[1];
 
-  const id = state.nextId++;
-  const rec = { id, hostId, productId, qty, unitPriceJpy: unitPrice, receivedJpy: received,
-    orderDate: date, buckyOrdered: false, buckyOrderedAt: null, shipped: false, shippedAt: null,
-    deliveryAddress: finalAddress, note: fullNote, y, m };
-  state.orders.push(rec);
-  await dbSave('orders', { id, host_id: hostId, product_id: productId, qty, unit_price_jpy: unitPrice,
-    received_jpy: received, order_date: date, bucky_ordered: false, bucky_ordered_at: null,
-    shipped: false, shipped_at: null, delivery_address: finalAddress, note: fullNote, y, m });
+  for (var i = 0; i < validItems.length; i++) {
+    var item = validItems[i];
+    var noteStr = item.variantName ? '[' + item.variantName + ']' : '';
+    var id = state.nextId++;
+    var rec = { id: id, hostId: hostId, productId: item.productId, qty: item.qty,
+      unitPriceJpy: item.price, receivedJpy: i === 0 ? received : 0,
+      orderDate: date, buckyOrdered: false, buckyOrderedAt: null,
+      shipped: false, shippedAt: null, trackingNumber: '',
+      deliveryAddress: finalAddress, note: noteStr, y: y, m: m };
+    state.orders.push(rec);
+    await dbSave('orders', { id: id, host_id: hostId, product_id: item.productId,
+      qty: item.qty, unit_price_jpy: item.price,
+      received_jpy: i === 0 ? received : 0, order_date: date,
+      bucky_ordered: false, bucky_ordered_at: null,
+      shipped: false, shipped_at: null,
+      delivery_address: finalAddress, note: noteStr, y: y, m: m });
+  }
 
-  // フォームリセット
   document.getElementById('o-host').value = '';
-  document.getElementById('o-product').value = '';
-  document.getElementById('o-variant').innerHTML = '<option value="">選択してください</option>';
-  document.getElementById('o-variant-wrap').style.display = 'none';
-  document.getElementById('o-qty').value = '1';
-  document.getElementById('o-price').value = '';
+  document.getElementById('o-date').value = '';
   document.getElementById('o-received').value = '';
   document.getElementById('o-address').value = '';
-  document.getElementById('o-note').value = '';
-  document.getElementById('order-preview').style.display = 'none';
+  orderItems = [];
+  renderOrderItemsList();
+  if (document.getElementById('order-preview')) document.getElementById('order-preview').style.display = 'none';
   renderAll();
 }
 
 function renderOrders() {
-  const { y, m } = state;
-  const filter = document.getElementById('order-filter-status')?.value || '';
-  let orders = ordersOfMonth(y, m);
-  if (filter === 'pending') orders = orders.filter(o => !o.buckyOrdered && !o.shipped);
-  else if (filter === 'ordered') orders = orders.filter(o => o.buckyOrdered && !o.shipped);
-  else if (filter === 'shipped') orders = orders.filter(o => o.shipped);
-  orders = orders.sort((a,b) => (b.orderDate||'').localeCompare(a.orderDate||''));
+  var curY = state.y, curM = state.m;
+  var filter = document.getElementById('order-filter-status') ? document.getElementById('order-filter-status').value : '';
+  var searchQ = document.getElementById('order-search') ? document.getElementById('order-search').value.trim().toLowerCase() : '';
+  var orders = ordersOfMonth(curY, curM);
+  if (filter === 'pending')  orders = orders.filter(function(o){ return !o.buckyOrdered && !o.shipped; });
+  else if (filter === 'ordered') orders = orders.filter(function(o){ return o.buckyOrdered && !o.shipped; });
+  else if (filter === 'shipped') orders = orders.filter(function(o){ return o.shipped; });
+  // 検索
+  if (searchQ) {
+    orders = orders.filter(function(o) {
+      var h2 = getHost(o.hostId);
+      var p2 = getProduct(o.productId);
+      var txt = ((h2 ? h2.name : '') + ' ' + (p2 ? p2.name : '') + ' ' + (o.note||'')).toLowerCase();
+      return txt.indexOf(searchQ) !== -1;
+    });
+  }
+  orders = orders.sort(function(a,b){ return (b.orderDate||'').localeCompare(a.orderDate||''); });
 
   if (orders.length === 0) {
-    document.getElementById('orders-table').innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">受注データがありません</td></tr>';
+    document.getElementById('orders-table').innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px">' + (searchQ ? '検索結果がありません' : '受注データがありません') + '</td></tr>';
     return;
   }
-  let html = '';
-  orders.forEach(o => {
-    const h = getHost(o.hostId);
-    const p = getProduct(o.productId);
-    const shop = h ? getShop(h.shopId) : null;
-    const st = getOrderStatus(o);
-    const buckyBtn = !o.buckyOrdered
+  var html = '';
+  orders.forEach(function(o) {
+    var h2 = getHost(o.hostId);
+    var p2 = getProduct(o.productId);
+    var shop = h2 ? getShop(h2.shopId) : null;
+    var st = getOrderStatus(o);
+    var variantTag = '';
+    if (o.note) { var vm = o.note.match(/^\[(.+?)\]/); if (vm) variantTag = '<br><span style="font-size:11px;color:var(--yellow);font-weight:600">' + htmlEscape(vm[1]) + '</span>'; }
+    var buckyBtn = !o.buckyOrdered
       ? '<button class="btn btn-sm" style="background:rgba(79,156,249,0.15);border:1px solid rgba(79,156,249,0.3);color:var(--accent);font-size:11px" onclick="markBucky(' + o.id + ')">発注済</button>'
       : '';
-    const shipBtn = (o.buckyOrdered && !o.shipped)
+    var shipBtn = (o.buckyOrdered && !o.shipped)
       ? '<button class="btn btn-sm" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);color:var(--green);font-size:11px" onclick="markShipped(' + o.id + ')">発送済</button>'
       : '';
+    var trackingNum = o.trackingNumber || '';
+    var trackingCell = trackingNum
+      ? '<span style="font-size:11px;font-family:var(--mono);color:var(--accent)">' + htmlEscape(trackingNum) + '</span>'
+      : '<span style="font-size:11px;color:var(--muted)">未入力</span>';
     html += '<tr>'
-      + '<td style="font-size:12px;color:var(--muted)">' + o.orderDate + '</td>'
-      + '<td><strong>' + (h?.name||'?') + '</strong></td>'
-      + '<td style="font-size:12px;color:var(--muted)">' + (shop?.name||'-') + '</td>'
-      + '<td>' + (p?.name||'?') + (o.note && o.note.match(/^\[(.+?)\]/) ? '<br><span style="font-size:11px;color:var(--yellow);font-weight:600">' + o.note.match(/^\[(.+?)\]/)[1] + '</span>' : '') + '</td>'
+      + '<td style="font-size:12px;color:var(--muted)">' + (o.orderDate||'') + '</td>'
+      + '<td><strong>' + htmlEscape(h2 ? h2.name : '?') + '</strong></td>'
+      + '<td style="font-size:12px;color:var(--muted)">' + htmlEscape(shop ? shop.name : '-') + '</td>'
+      + '<td>' + htmlEscape(p2 ? p2.name : '?') + variantTag + '</td>'
       + '<td class="num">' + o.qty + '</td>'
       + '<td class="num" style="color:var(--accent)">' + yen(o.unitPriceJpy * o.qty) + '</td>'
       + '<td class="num" style="color:var(--green)">' + yen(o.receivedJpy) + '</td>'
+      + '<td style="font-size:11px">' + trackingCell + '</td>'
       + '<td><span class="badge ' + st.cls + '">' + st.label + '</span></td>'
       + '<td><div style="display:flex;gap:4px;flex-wrap:wrap">'
       + buckyBtn + shipBtn
@@ -1528,11 +1608,11 @@ async function markShipped(id) {
 
 // 受注編集モーダル
 function openOrderEditModal(id) {
-  const o = state.orders.find(x => x.id === id);
+  var o = state.orders.find(function(x){ return x.id === id; });
   if (!o) return;
   document.getElementById('oe-id').value = id;
-  document.getElementById('oe-host').innerHTML = state.hosts.map(h => '<option value="' + h.id + '"' + (h.id===o.hostId?' selected':'') + '>' + h.name + '</option>').join('');
-  document.getElementById('oe-product').innerHTML = state.products.map(p => '<option value="' + p.id + '"' + (p.id===o.productId?' selected':'') + '>' + p.name + '</option>').join('');
+  document.getElementById('oe-host').innerHTML = state.hosts.map(function(h){ return '<option value="' + h.id + '"' + (h.id===o.hostId?' selected':'') + '>' + htmlEscape(h.name) + '</option>'; }).join('');
+  document.getElementById('oe-product').innerHTML = state.products.map(function(p){ return '<option value="' + p.id + '"' + (p.id===o.productId?' selected':'') + '>' + htmlEscape(p.name) + '</option>'; }).join('');
   document.getElementById('oe-qty').value = o.qty;
   document.getElementById('oe-price').value = o.unitPriceJpy;
   document.getElementById('oe-received').value = o.receivedJpy;
@@ -1540,31 +1620,85 @@ function openOrderEditModal(id) {
   document.getElementById('oe-address').value = o.deliveryAddress;
   document.getElementById('oe-bucky-date').value = o.buckyOrderedAt||'';
   document.getElementById('oe-shipped-date').value = o.shippedAt||'';
+  document.getElementById('oe-tracking').value = o.trackingNumber||'';
+  document.getElementById('oe-intl-ship').value = o.intlShipping||'';
+  document.getElementById('oe-agent-fee').value = o.agentFee||'';
+  document.getElementById('oe-other-fee').value = o.otherFee||'';
   document.getElementById('oe-note').value = o.note;
+  if (document.getElementById('oe-profit-box')) document.getElementById('oe-profit-box').style.display = 'none';
+  updateOEProfit();
   document.getElementById('order-edit-modal').classList.add('open');
 }
 function closeOrderEditModal() { document.getElementById('order-edit-modal').classList.remove('open'); }
 
-async function saveOrderEdit() {
-  const id = parseInt(document.getElementById('oe-id').value);
-  const hostId = parseInt(document.getElementById('oe-host').value);
-  const productId = parseInt(document.getElementById('oe-product').value);
-  const qty = parseInt(document.getElementById('oe-qty').value)||1;
-  const unitPriceJpy = parseFloat(document.getElementById('oe-price').value)||0;
-  const receivedJpy = parseFloat(document.getElementById('oe-received').value)||0;
-  const orderDate = document.getElementById('oe-date').value;
-  const deliveryAddress = document.getElementById('oe-address').value;
-  const buckyOrderedAt = document.getElementById('oe-bucky-date').value||null;
-  const shippedAt = document.getElementById('oe-shipped-date').value||null;
-  const note = document.getElementById('oe-note').value;
-  const [y,m] = orderDate.split('-').map(Number);
-  const buckyOrdered = !!buckyOrderedAt;
-  const shipped = !!shippedAt;
+function onTrackingInput() {
+  var val = document.getElementById('oe-tracking').value.trim();
+  if (val) {
+    if (!document.getElementById('oe-bucky-date').value)
+      document.getElementById('oe-bucky-date').value = new Date().toISOString().split('T')[0];
+    if (!document.getElementById('oe-shipped-date').value)
+      document.getElementById('oe-shipped-date').value = new Date().toISOString().split('T')[0];
+  }
+}
 
-  const idx = state.orders.findIndex(o => o.id === id);
+function updateOEProfit() {
+  var qty = parseInt(document.getElementById('oe-qty') ? document.getElementById('oe-qty').value : 0) || 0;
+  var price = parseFloat(document.getElementById('oe-price') ? document.getElementById('oe-price').value : 0) || 0;
+  var intlShip = parseFloat(document.getElementById('oe-intl-ship') ? document.getElementById('oe-intl-ship').value : 0) || 0;
+  var agentFee = parseFloat(document.getElementById('oe-agent-fee') ? document.getElementById('oe-agent-fee').value : 0) || 0;
+  var otherFee = parseFloat(document.getElementById('oe-other-fee') ? document.getElementById('oe-other-fee').value : 0) || 0;
+  var sales = qty * price;
+  var totalCost = intlShip + agentFee + otherFee;
+  var profit = sales - totalCost;
+  var margin = sales > 0 ? (profit / sales * 100) : 0;
+  var box = document.getElementById('oe-profit-box');
+  if (!box) return;
+  if (sales > 0 || totalCost > 0) {
+    box.style.display = 'block';
+    document.getElementById('oe-pb-sales').textContent = yen(sales);
+    document.getElementById('oe-pb-cost').textContent = yen(totalCost);
+    document.getElementById('oe-pb-profit').textContent = yen(profit);
+    document.getElementById('oe-pb-profit').style.color = profit >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('oe-pb-margin').textContent = margin.toFixed(1) + '%';
+    document.getElementById('oe-pb-margin').style.color = margin >= 0 ? 'var(--green)' : 'var(--red)';
+  } else { box.style.display = 'none'; }
+}
+
+async function saveOrderEdit() {
+  var id = parseInt(document.getElementById('oe-id').value);
+  var hostId = parseInt(document.getElementById('oe-host').value);
+  var productId = parseInt(document.getElementById('oe-product').value);
+  var qty = parseInt(document.getElementById('oe-qty').value)||1;
+  var unitPriceJpy = parseFloat(document.getElementById('oe-price').value)||0;
+  var receivedJpy = parseFloat(document.getElementById('oe-received').value)||0;
+  var orderDate = document.getElementById('oe-date').value;
+  var deliveryAddress = document.getElementById('oe-address').value;
+  var buckyOrderedAt = document.getElementById('oe-bucky-date').value||null;
+  var shippedAt = document.getElementById('oe-shipped-date').value||null;
+  var trackingNumber = document.getElementById('oe-tracking').value.trim();
+  var intlShipping = parseFloat(document.getElementById('oe-intl-ship').value)||0;
+  var agentFee = parseFloat(document.getElementById('oe-agent-fee').value)||0;
+  var otherFee = parseFloat(document.getElementById('oe-other-fee').value)||0;
+  var note = document.getElementById('oe-note').value;
+  var ym = orderDate.split('-').map(Number);
+  var y = ym[0], m = ym[1];
+  var buckyOrdered = !!(buckyOrderedAt || trackingNumber);
+  var shipped = !!(shippedAt || trackingNumber);
+
+  var idx = state.orders.findIndex(function(o){ return o.id === id; });
   if (idx !== -1) {
-    state.orders[idx] = { id, hostId, productId, qty, unitPriceJpy, receivedJpy, orderDate, buckyOrdered, buckyOrderedAt, shipped, shippedAt, deliveryAddress, note, y, m };
-    await dbSave('orders', { id, host_id: hostId, product_id: productId, qty, unit_price_jpy: unitPriceJpy, received_jpy: receivedJpy, order_date: orderDate, bucky_ordered: buckyOrdered, bucky_ordered_at: buckyOrderedAt, shipped, shipped_at: shippedAt, delivery_address: deliveryAddress, note, y, m });
+    state.orders[idx] = { id: id, hostId: hostId, productId: productId, qty: qty,
+      unitPriceJpy: unitPriceJpy, receivedJpy: receivedJpy, orderDate: orderDate,
+      buckyOrdered: buckyOrdered, buckyOrderedAt: buckyOrderedAt,
+      shipped: shipped, shippedAt: shippedAt,
+      trackingNumber: trackingNumber,
+      intlShipping: intlShipping, agentFee: agentFee, otherFee: otherFee,
+      deliveryAddress: deliveryAddress, note: note, y: y, m: m };
+    await dbSave('orders', { id: id, host_id: hostId, product_id: productId, qty: qty,
+      unit_price_jpy: unitPriceJpy, received_jpy: receivedJpy, order_date: orderDate,
+      bucky_ordered: buckyOrdered, bucky_ordered_at: buckyOrderedAt,
+      shipped: shipped, shipped_at: shippedAt,
+      delivery_address: deliveryAddress, note: note, y: y, m: m });
   }
   closeOrderEditModal(); renderAll();
 }
@@ -1910,11 +2044,28 @@ function handleProductImgDrop(e) {
 function readProductImgFile(file) {
   var reader = new FileReader();
   reader.onload = function(e) {
-    productImgBase64 = e.target.result; // "data:image/jpeg;base64,..."
-    var img = document.getElementById('ai-img-preview-img');
-    img.src = productImgBase64;
-    document.getElementById('ai-img-preview').style.display = 'inline-block';
-    document.getElementById('ai-img-placeholder').style.display = 'none';
+    var original = e.target.result;
+    // Canvasでリサイズ（最大200px）してからbase64化 → Supabase行サイズ上限対策
+    var tmpImg = new Image();
+    tmpImg.onload = function() {
+      var maxSize = 200;
+      var w = tmpImg.width, h = tmpImg.height;
+      if (w > maxSize || h > maxSize) {
+        var scale = maxSize / Math.max(w, h);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(tmpImg, 0, 0, w, h);
+      productImgBase64 = canvas.toDataURL('image/jpeg', 0.82);
+      var img = document.getElementById('ai-img-preview-img');
+      img.src = productImgBase64;
+      document.getElementById('ai-img-preview').style.display = 'inline-block';
+      document.getElementById('ai-img-placeholder').style.display = 'none';
+    };
+    tmpImg.src = original;
   };
   reader.readAsDataURL(file);
 }
@@ -2225,7 +2376,7 @@ async function runSizeImgOCR(btn) {
     // 解析結果が既に表示中なら即時更新
     if (document.getElementById('ai-result').style.display !== 'none') {
       aiProductData.size_table = ocrSizeTable;
-      renderSizeTable(ocrSizeTable, aiProductData);
+      renderSizeTable(ocrSizeTable);
     }
   } catch(e) {
     status.innerHTML = '<span style="color:var(--red)">⚠️ 読み取り失敗: ' + e.message + '</span>';
@@ -2512,24 +2663,9 @@ function renderAIResult(data) {
   var variantsEl = document.getElementById('ai-variants');
   if (aiVariants.length > 0 && variantsSection && variantsEl) {
     variantsSection.style.display = 'block';
-    // 最新レート取得（チャージ履歴から）
-    var latestRate = 0;
-    if (state.revolut && state.revolut.length > 0) {
-      var sorted = state.revolut.slice().sort(function(a,b){ return b.date.localeCompare(a.date); });
-      var rc = sorted[0];
-      if (rc && rc.cnyAmount > 0) latestRate = rc.jpyAmount / rc.cnyAmount;
-    }
     variantsEl.innerHTML = aiVariants.map(function(v) {
-      var pricePart = '';
-      if (v.price_cny) {
-        var cnyStr = v.price_cny + '元';
-        var jpyStr = latestRate > 0 ? '≈' + Math.round(v.price_cny * latestRate) + '円' : '';
-        pricePart = '<span style="font-size:11px;opacity:0.85;margin-left:6px">'
-          + cnyStr + (jpyStr ? ' ' + jpyStr : '') + '</span>';
-      }
       return '<span class="badge badge-yellow" style="font-size:12px;padding:4px 10px">🏷️ '
         + (v.name || '') + (v.name_cn ? ' <span style="font-size:10px;opacity:0.7">(' + v.name_cn + ')</span>' : '')
-        + pricePart
         + '</span>';
     }).join('');
   } else if (variantsSection) {
@@ -2558,47 +2694,22 @@ function renderAIResult(data) {
     : '<span style="color:var(--muted);font-size:12px">サイズ情報が取得できませんでした</span>';
 
   // サイズ表
-  renderSizeTable(data.size_table, data);
+  renderSizeTable(data.size_table);
 
   document.getElementById('ai-result').style.display = 'block';
 }
 
-function getSizeTableLabels(data) {
-  // category と variants から上着/下着ラベルを動的に決定
-  var cat = (data && data.category) ? data.category : '';
-  var variants = (data && data.variants) ? data.variants : [];
-  var names = variants.map(function(v){ return (v.name||'') + (v.name_cn||''); }).join('');
-  var allText = cat + names;
-
-  // 上着ラベル
-  var topLabel = 'ジャケット';
-  if (/コート|coat/i.test(allText))        topLabel = 'コート';
-  else if (/ブルゾン|ジャンパー/i.test(allText)) topLabel = 'ブルゾン';
-  else if (/シャツ|shirt/i.test(allText))   topLabel = 'シャツ';
-  else if (/ニット|セーター/i.test(allText)) topLabel = 'ニット';
-  else if (/スーツ|suit|西装/i.test(allText)) topLabel = 'ジャケット';
-  else if (/トップス|tops/i.test(allText))  topLabel = 'トップス';
-
-  // 下着ラベル
-  var btmLabel = 'パンツ';
-  if (/スラックス|slacks/i.test(allText))   btmLabel = 'スラックス';
-  else if (/デニム|ジーンズ|jeans/i.test(allText)) btmLabel = 'デニム';
-  else if (/ショート|shorts/i.test(allText)) btmLabel = 'ショートパンツ';
-  else if (/スカート|skirt/i.test(allText)) btmLabel = 'スカート';
-  else if (/裤|pants/i.test(allText))       btmLabel = 'パンツ';
-
-  return { topLabel: topLabel, btmLabel: btmLabel };
-}
-
-function renderSizeTable(sizeTable, data) {
+function renderSizeTable(sizeTable) {
   var el = document.getElementById('ai-sizetable');
   if (!sizeTable) {
-    el.innerHTML = '<span style="color:var(--muted)">サイズ表が取得できませんでした。</span>';
+    el.innerHTML = '<span style="color:var(--muted)">サイズ表が取得できませんでした。上の「🔍 読み取り」ボタンでサイズ表画像から読み取れます。</span>';
     return;
   }
 
+  // 構造体形式 {tops, bottoms, unified} と旧来の配列形式の両対応
   var tops, bottoms, unified;
   if (Array.isArray(sizeTable)) {
+    // 旧形式（配列）：part フィールドで振り分け
     tops    = sizeTable.filter(function(r){ return r.part === '上'; });
     bottoms = sizeTable.filter(function(r){ return r.part === '下'; });
     unified = sizeTable.filter(function(r){ return !r.part; });
@@ -2608,69 +2719,40 @@ function renderSizeTable(sizeTable, data) {
     unified = sizeTable.unified || [];
   }
 
-  // 重複行除去（全フィールド一致）
-  function dedupRows(rows) {
-    var seen = {};
-    return rows.filter(function(r) {
-      var key = JSON.stringify(r);
-      if (seen[key]) return false;
-      seen[key] = true;
-      return true;
-    });
-  }
-  tops    = dedupRows(tops);
-  bottoms = dedupRows(bottoms);
-  unified = dedupRows(unified);
-
   var total = tops.length + bottoms.length + unified.length;
   if (total === 0) {
     el.innerHTML = '<span style="color:var(--muted)">サイズ表が取得できませんでした。</span>';
     return;
   }
 
-  // 動的ラベル取得
-  var labels = getSizeTableLabels(data || aiProductData);
-  var topLabel = labels.topLabel;
-  var btmLabel = labels.btmLabel;
-
   var colLabels = {
-    size:'サイズ', length:'着丈(CM)', chest:'胸囲(CM)', shoulder:'肩幅(CM)',
-    sleeve:'袖丈(CM)', cuff:'袖口(CM)', waist:'ウエスト(CM)', hip:'ヒップ(CM)',
-    pants_length:'丈(CM)', hem:'裾幅(CM)', thigh:'太腿(CM)', inseam:'股下(CM)',
-    rise:'股上(CM)', width:'股幅(CM)'
+    size:'サイズ', length:'着丈(cm)', chest:'胸囲(cm)', shoulder:'肩幅(cm)',
+    sleeve:'袖丈(cm)', cuff:'袖口(cm)', waist:'ウエスト(cm)', hip:'ヒップ(cm)',
+    pants_length:'丈(cm)', hem:'裾幅(cm)', thigh:'太腿(cm)', inseam:'股下(cm)',
+    rise:'股上(cm)', width:'股幅(cm)'
   };
 
   function buildTable(rows, icon, label) {
     if (!rows || rows.length === 0) return '';
+    // この行群が持つ列だけ抽出（size以外）
     var cols = [];
     rows.forEach(function(r) {
       Object.keys(r).forEach(function(k) {
-        if (k === 'size' || k === 'part') return;
-        if (cols.indexOf(k) !== -1) return;
-        var v = r[k];
-        if (v === null || typeof v !== 'object') cols.push(k);
+        if (k !== 'size' && k !== 'part' && cols.indexOf(k) === -1) cols.push(k);
       });
     });
     var h = '';
-    if (label) {
-      h += '<div style="font-size:13px;font-weight:700;color:var(--accent);padding:10px 0 6px;display:flex;align-items:center;gap:6px">'
+    if (icon) {
+      h += '<div style="font-size:12px;font-weight:700;color:var(--accent);padding:8px 0 6px;display:flex;align-items:center;gap:6px">'
         + icon + ' ' + label + '</div>';
     }
-    h += '<table class="size-table" style="width:100%;margin-bottom:16px;border-collapse:collapse"><thead><tr>';
-    h += '<th style="text-align:center;padding:8px 12px;background:var(--surface);color:var(--muted);font-size:12px;font-weight:600;border-bottom:1px solid var(--border)">サイズ</th>';
-    cols.forEach(function(c) {
-      h += '<th style="text-align:center;padding:8px 12px;background:var(--surface);color:var(--muted);font-size:12px;font-weight:600;border-bottom:1px solid var(--border)">' + (colLabels[c] || c) + '</th>';
-    });
+    h += '<table class="size-table" style="width:100%;margin-bottom:12px"><thead><tr>';
+    h += '<th>サイズ</th>';
+    cols.forEach(function(c) { h += '<th>' + (colLabels[c] || c) + '</th>'; });
     h += '</tr></thead><tbody>';
-    rows.forEach(function(row, ri) {
-      var bg = ri % 2 === 0 ? 'var(--bg)' : 'var(--surface)';
-      h += '<tr style="background:' + bg + '">';
-      h += '<td style="text-align:center;padding:8px 12px;font-weight:700;color:var(--accent);font-size:13px">' + (row.size || '-') + '</td>';
-      cols.forEach(function(c) {
-        var v = row[c];
-        if (v === undefined || v === null) v = '-';
-        h += '<td style="text-align:center;padding:8px 12px;font-size:13px">' + v + '</td>';
-      });
+    rows.forEach(function(row) {
+      h += '<tr><td style="font-weight:700;color:var(--accent)">' + (row.size || '-') + '</td>';
+      cols.forEach(function(c) { h += '<td>' + (row[c] !== undefined ? row[c] : '-') + '</td>'; });
       h += '</tr>';
     });
     h += '</tbody></table>';
@@ -2681,14 +2763,14 @@ function renderSizeTable(sizeTable, data) {
   var isSetup = tops.length > 0 && bottoms.length > 0;
 
   if (isSetup) {
-    html += buildTable(tops,    '🧥', topLabel);
-    html += buildTable(bottoms, '👖', btmLabel);
+    html += buildTable(tops,    '🧥', '上着');
+    html += buildTable(bottoms, '👖', '下着');
   } else if (unified.length > 0) {
     html += buildTable(unified, '', '');
   } else if (tops.length > 0) {
-    html += buildTable(tops, '🧥', topLabel);
+    html += buildTable(tops, '🧥', '上着');
   } else if (bottoms.length > 0) {
-    html += buildTable(bottoms, '👖', btmLabel);
+    html += buildTable(bottoms, '👖', '下着');
   }
 
   el.innerHTML = html || '<span style="color:var(--muted)">サイズ表データなし</span>';
@@ -3356,6 +3438,11 @@ function renderPL() {
     + '<tbody>' + statusRows + '</tbody></table></div>';
 }
 // ===== セレクトオプション更新 =====
+function initOrderForm() {
+  if (orderItems.length === 0) orderItems.push({ productId: 0, variantName: '', qty: 1, price: 0 });
+  renderOrderItemsList();
+}
+
 function updateSelectOptions() {
   const hostSels = ['o-host', 'oe-host'];
   hostSels.forEach(id => {
