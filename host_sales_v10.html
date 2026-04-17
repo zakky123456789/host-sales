@@ -2225,7 +2225,7 @@ async function runSizeImgOCR(btn) {
     // 解析結果が既に表示中なら即時更新
     if (document.getElementById('ai-result').style.display !== 'none') {
       aiProductData.size_table = ocrSizeTable;
-      renderSizeTable(ocrSizeTable);
+      renderSizeTable(ocrSizeTable, aiProductData);
     }
   } catch(e) {
     status.innerHTML = '<span style="color:var(--red)">⚠️ 読み取り失敗: ' + e.message + '</span>';
@@ -2512,9 +2512,24 @@ function renderAIResult(data) {
   var variantsEl = document.getElementById('ai-variants');
   if (aiVariants.length > 0 && variantsSection && variantsEl) {
     variantsSection.style.display = 'block';
+    // 最新レート取得（チャージ履歴から）
+    var latestRate = 0;
+    if (state.revolut && state.revolut.length > 0) {
+      var sorted = state.revolut.slice().sort(function(a,b){ return b.date.localeCompare(a.date); });
+      var rc = sorted[0];
+      if (rc && rc.cnyAmount > 0) latestRate = rc.jpyAmount / rc.cnyAmount;
+    }
     variantsEl.innerHTML = aiVariants.map(function(v) {
+      var pricePart = '';
+      if (v.price_cny) {
+        var cnyStr = v.price_cny + '元';
+        var jpyStr = latestRate > 0 ? '≈' + Math.round(v.price_cny * latestRate) + '円' : '';
+        pricePart = '<span style="font-size:11px;opacity:0.85;margin-left:6px">'
+          + cnyStr + (jpyStr ? ' ' + jpyStr : '') + '</span>';
+      }
       return '<span class="badge badge-yellow" style="font-size:12px;padding:4px 10px">🏷️ '
         + (v.name || '') + (v.name_cn ? ' <span style="font-size:10px;opacity:0.7">(' + v.name_cn + ')</span>' : '')
+        + pricePart
         + '</span>';
     }).join('');
   } else if (variantsSection) {
@@ -2543,19 +2558,45 @@ function renderAIResult(data) {
     : '<span style="color:var(--muted);font-size:12px">サイズ情報が取得できませんでした</span>';
 
   // サイズ表
-  renderSizeTable(data.size_table);
+  renderSizeTable(data.size_table, data);
 
   document.getElementById('ai-result').style.display = 'block';
 }
 
-function renderSizeTable(sizeTable) {
+function getSizeTableLabels(data) {
+  // category と variants から上着/下着ラベルを動的に決定
+  var cat = (data && data.category) ? data.category : '';
+  var variants = (data && data.variants) ? data.variants : [];
+  var names = variants.map(function(v){ return (v.name||'') + (v.name_cn||''); }).join('');
+  var allText = cat + names;
+
+  // 上着ラベル
+  var topLabel = 'ジャケット';
+  if (/コート|coat/i.test(allText))        topLabel = 'コート';
+  else if (/ブルゾン|ジャンパー/i.test(allText)) topLabel = 'ブルゾン';
+  else if (/シャツ|shirt/i.test(allText))   topLabel = 'シャツ';
+  else if (/ニット|セーター/i.test(allText)) topLabel = 'ニット';
+  else if (/スーツ|suit|西装/i.test(allText)) topLabel = 'ジャケット';
+  else if (/トップス|tops/i.test(allText))  topLabel = 'トップス';
+
+  // 下着ラベル
+  var btmLabel = 'パンツ';
+  if (/スラックス|slacks/i.test(allText))   btmLabel = 'スラックス';
+  else if (/デニム|ジーンズ|jeans/i.test(allText)) btmLabel = 'デニム';
+  else if (/ショート|shorts/i.test(allText)) btmLabel = 'ショートパンツ';
+  else if (/スカート|skirt/i.test(allText)) btmLabel = 'スカート';
+  else if (/裤|pants/i.test(allText))       btmLabel = 'パンツ';
+
+  return { topLabel: topLabel, btmLabel: btmLabel };
+}
+
+function renderSizeTable(sizeTable, data) {
   var el = document.getElementById('ai-sizetable');
   if (!sizeTable) {
     el.innerHTML = '<span style="color:var(--muted)">サイズ表が取得できませんでした。</span>';
     return;
   }
 
-  // 構造体形式 {tops, bottoms, unified} と旧来の配列形式の両対応
   var tops, bottoms, unified;
   if (Array.isArray(sizeTable)) {
     tops    = sizeTable.filter(function(r){ return r.part === '上'; });
@@ -2567,7 +2608,7 @@ function renderSizeTable(sizeTable) {
     unified = sizeTable.unified || [];
   }
 
-  // 重複行を除去（sizeキーで同一行を判定）
+  // 重複行除去（全フィールド一致）
   function dedupRows(rows) {
     var seen = {};
     return rows.filter(function(r) {
@@ -2587,6 +2628,11 @@ function renderSizeTable(sizeTable) {
     return;
   }
 
+  // 動的ラベル取得
+  var labels = getSizeTableLabels(data || aiProductData);
+  var topLabel = labels.topLabel;
+  var btmLabel = labels.btmLabel;
+
   var colLabels = {
     size:'サイズ', length:'着丈(CM)', chest:'胸囲(CM)', shoulder:'肩幅(CM)',
     sleeve:'袖丈(CM)', cuff:'袖口(CM)', waist:'ウエスト(CM)', hip:'ヒップ(CM)',
@@ -2596,7 +2642,6 @@ function renderSizeTable(sizeTable) {
 
   function buildTable(rows, icon, label) {
     if (!rows || rows.length === 0) return '';
-    // 列抽出（sizeとpart以外、かつ値がプリミティブのもののみ）
     var cols = [];
     rows.forEach(function(r) {
       Object.keys(r).forEach(function(k) {
@@ -2636,14 +2681,14 @@ function renderSizeTable(sizeTable) {
   var isSetup = tops.length > 0 && bottoms.length > 0;
 
   if (isSetup) {
-    html += buildTable(tops,    '🧥', '上着');
-    html += buildTable(bottoms, '👖', '下着');
+    html += buildTable(tops,    '🧥', topLabel);
+    html += buildTable(bottoms, '👖', btmLabel);
   } else if (unified.length > 0) {
     html += buildTable(unified, '', '');
   } else if (tops.length > 0) {
-    html += buildTable(tops, '🧥', '上着');
+    html += buildTable(tops, '🧥', topLabel);
   } else if (bottoms.length > 0) {
-    html += buildTable(bottoms, '👖', '下着');
+    html += buildTable(bottoms, '👖', btmLabel);
   }
 
   el.innerHTML = html || '<span style="color:var(--muted)">サイズ表データなし</span>';
