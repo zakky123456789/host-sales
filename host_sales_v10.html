@@ -2319,7 +2319,10 @@ async function analyzeProduct() {
   ],
   "colors": [{"cn": "黒色", "jp": "ブラック"}],
   "sizes_cn": ["M", "L", "XL"],
-  "size_table": [],
+  "size_table": [
+    {"part": "上", "size": "M", "length": 55.5, "chest": 116, "shoulder": 48, "sleeve": 62},
+    {"part": "下", "size": "M", "pants_length": 108, "hip": 102, "waist": 80, "hem": 63}
+  ],
   "description": "特徴を日本語50文字以内",
   "category": "トップス/パンツ/アウター/シューズ/アクセサリー/その他"
 }`;
@@ -2584,7 +2587,10 @@ function renderSizeTable(sizeTable) {
     var cols = [];
     rows.forEach(function(r) {
       Object.keys(r).forEach(function(k) {
-        if (k !== 'size' && k !== 'part' && cols.indexOf(k) === -1) cols.push(k);
+        if (k !== 'size' && k !== 'part' && cols.indexOf(k) === -1) {
+          var v = r[k];
+          if (typeof v !== 'object' || v === null) cols.push(k);
+        }
       });
     });
     var h = '';
@@ -2598,7 +2604,12 @@ function renderSizeTable(sizeTable) {
     h += '</tr></thead><tbody>';
     rows.forEach(function(row) {
       h += '<tr><td style="font-weight:700;color:var(--accent)">' + (row.size || '-') + '</td>';
-      cols.forEach(function(c) { h += '<td>' + (row[c] !== undefined ? row[c] : '-') + '</td>'; });
+      cols.forEach(function(c) {
+        var cellVal = row[c];
+        if (cellVal === undefined || cellVal === null) cellVal = '-';
+        else if (typeof cellVal === 'object') cellVal = JSON.stringify(cellVal);
+        h += '<td>' + cellVal + '</td>';
+      });
       h += '</tr>';
     });
     h += '</tbody></table>';
