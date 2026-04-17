@@ -429,58 +429,65 @@
             </div>
           </div>
 
-          <div class="form-group" style="margin-bottom:14px">
-            <label style="display:flex;align-items:center;gap:8px">
-              📸 タオバオ商品詳細ページのスクリーンショット
-              <span style="font-size:10px;background:rgba(52,211,153,0.15);color:var(--green);padding:1px 7px;border-radius:4px;font-weight:600">商品名・価格・カラー・バリアント・サイズが1枚で読み取れます</span>
-            </label>
-            <div id="ai-img-upload-area" onclick="document.getElementById('ai-img-file').click()" style="border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:all 0.15s;background:var(--surface2)" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleProductImgDrop(event)">
-              <div id="ai-img-preview" style="display:none;position:relative;display:inline-block">
-                <img id="ai-img-preview-img" style="max-height:120px;max-width:100%;border-radius:6px;object-fit:contain">
-                <button onclick="event.stopPropagation();clearProductImg()" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:12px;line-height:20px;padding:0">✕</button>
-              </div>
-              <div id="ai-img-placeholder" style="color:var(--muted);font-size:13px">
-                <div style="font-size:28px;margin-bottom:6px">📸</div>
-                <div style="font-weight:600">タオバオ商品詳細ページをスクリーンショット → ここにドロップ</div>
-                <div style="font-size:11px;margin-top:4px;color:var(--muted)">商品名・¥価格・颜色（バリアント）・尺码（サイズ）が写っていればOK　JPG / PNG / WEBP</div>
-              </div>
+          <!-- === 解析用スクショ（複数枚） === -->
+          <div style="margin-bottom:18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <label style="font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px">
+                📸 解析用スクリーンショット
+                <span style="font-size:10px;background:rgba(52,211,153,0.15);color:var(--green);padding:2px 8px;border-radius:4px;font-weight:600">バリアントごとに1枚ずつ → 価格を個別に読み取ります</span>
+              </label>
+              <button onclick="addAnalysisImgSlot()" class="btn btn-sm btn-ghost" style="font-size:11px">＋ スクショ追加</button>
             </div>
-            <input type="file" id="ai-img-file" accept="image/*" style="display:none" onchange="handleProductImgFile(this)">
+            <div id="analysis-img-slots" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px">例：セットアップ¥297のスクショ1枚 ＋ ジャケット単体¥206のスクショ1枚</div>
           </div>
 
+          <!-- === 商品メイン画像（サムネイル用） === -->
+          <div style="margin-bottom:18px">
+            <label style="font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              🖼️ 商品メイン画像（サムネイル用）
+              <span style="font-size:10px;color:var(--muted);font-weight:400">商品一覧に表示される画像。別途アップロード推奨</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div id="ai-img-upload-area" onclick="document.getElementById('ai-img-file').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleProductImgDrop(event)" style="width:100px;height:100px;border:2px dashed var(--border);border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;overflow:hidden;transition:border-color 0.15s;position:relative">
+                <div id="ai-img-preview" style="display:none;width:100%;height:100%">
+                  <img id="ai-img-preview-img" style="width:100%;height:100%;object-fit:cover">
+                  <button onclick="event.stopPropagation();clearProductImg()" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:11px;line-height:18px;padding:0">✕</button>
+                </div>
+                <div id="ai-img-placeholder" style="text-align:center;color:var(--muted);font-size:11px;padding:8px">
+                  <div style="font-size:24px;margin-bottom:4px">🖼️</div>
+                  <div>クリック or ドロップ</div>
+                </div>
+              </div>
+              <input type="file" id="ai-img-file" accept="image/*" style="display:none" onchange="handleProductImgFile(this)">
+              <div style="font-size:12px;color:var(--muted);line-height:1.6">
+                商品一覧のサムネイルに使用されます。<br>
+                解析用スクショとは別に、<br>
+                商品写真をアップしてください。
+              </div>
+            </div>
+          </div>
+
+          <!-- === タオバオURL（任意） === -->
           <div class="form-group" style="margin-bottom:14px">
-            <label>① タオバオ商品URL</label>
+            <label style="display:flex;align-items:center;gap:8px">
+              タオバオ商品URL
+              <span style="font-size:10px;color:var(--muted);font-weight:400">任意</span>
+            </label>
             <input id="ai-url" placeholder="https://item.taobao.com/item.htm?id=xxxxxx" style="font-size:12px">
           </div>
 
-          <div class="form-group" style="margin-bottom:14px">
-            <label style="display:flex;align-items:center;gap:8px">
-              ② 商品ページのテキスト
-              <span style="font-size:10px;background:rgba(148,163,184,0.15);color:var(--muted);padding:1px 7px;border-radius:4px;font-weight:600">任意 — 画像だけでもOK</span>
-            </label>
-            <textarea id="ai-pagetext" rows="5" placeholder="（任意）テキストを貼ると精度向上。タオバオページで Ctrl+A → Ctrl+C → ここに Ctrl+V&#10;画像のみでも解析できます。" style="font-size:12px;min-height:100px;resize:vertical"></textarea>
-          </div>
-
+          <!-- === サイズ表画像 === -->
           <div style="margin-bottom:14px">
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">
-              ③ サイズ表画像
-              <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none">任意・複数枚OK（上下セットアップも対応）</span>
-              <button onclick="addSizeImgSlot()" class="btn btn-sm btn-ghost" style="font-size:11px;margin-left:auto">＋ 画像を追加</button>
-            </label>
-            <div id="size-img-slots">
-              <div class="size-img-slot" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-                <div class="size-img-drop" onclick="triggerSizeImgInput(this)" ondragover="event.preventDefault();this.style.borderColor='var(--accent2)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleSizeImgDrop(event,this)" style="width:72px;height:72px;border:2px dashed var(--border);border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;overflow:hidden;font-size:22px;color:var(--muted);transition:border-color 0.15s">📐</div>
-                <input type="file" accept="image/*" style="display:none" onchange="handleSizeImgFileInput(this)">
-                <div style="flex:1">
-                  <div class="size-img-label" style="font-size:12px;color:var(--muted)">クリックまたはドロップで画像をアップロード</div>
-                  <div style="display:flex;gap:6px;margin-top:6px">
-                    <button onclick="runSizeImgOCR(this)" class="btn btn-sm" style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px">🔍 読み取り</button>
-                    <button onclick="removeSizeImgSlot(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button>
-                  </div>
-                </div>
-              </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <label style="font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px">
+                📐 サイズ表画像
+                <span style="font-size:10px;color:var(--muted);font-weight:400">任意・複数枚OK（上下セットアップ対応）</span>
+              </label>
+              <button onclick="addSizeImgSlot()" class="btn btn-sm btn-ghost" style="font-size:11px">＋ 画像を追加</button>
             </div>
-            <div id="img-ocr-status" style="font-size:11px;color:var(--muted);min-height:16px"></div>
+            <div id="size-img-slots" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px"></div>
+            <div id="img-ocr-status" style="font-size:11px;color:var(--muted);min-height:16px;margin-top:6px"></div>
           </div>
 
           <div style="display:flex;gap:10px;margin-bottom:16px">
@@ -1885,7 +1892,8 @@ async function addProduct() {
 
 let aiProductData = {};
 let ocrSizeTable = null; // {tops:[], bottoms:[], unified:[]} または null
-let productImgBase64 = ''; // アップロードした商品画像のbase64
+let productImgBase64 = ''; // サムネイル用画像のbase64
+let analysisImgs = []; // 解析用スクショ [{base64, label}]
 
 function handleProductImgFile(input) {
   var file = input.files[0];
@@ -1917,6 +1925,161 @@ function clearProductImg() {
   document.getElementById('ai-img-file').value = '';
 }
 
+// ===== 解析用スクショ管理 =====
+function addAnalysisImgSlot(base64, label) {
+  var container = document.getElementById('analysis-img-slots');
+  var idx = container.children.length;
+  var slotLabel = label || ('スクショ ' + (idx + 1));
+  var div = document.createElement('div');
+  div.className = 'analysis-img-slot';
+  div.style.cssText = 'border:2px dashed var(--border);border-radius:8px;overflow:hidden;background:var(--surface2);position:relative;min-height:140px;display:flex;flex-direction:column';
+  div.dataset.idx = idx;
+
+  var imgArea = document.createElement('div');
+  imgArea.style.cssText = 'flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:100px;overflow:hidden;position:relative';
+  imgArea.ondragover = function(e) { e.preventDefault(); div.style.borderColor='var(--accent)'; };
+  imgArea.ondragleave = function() { div.style.borderColor='var(--border)'; };
+  imgArea.ondrop = function(e) {
+    e.preventDefault(); div.style.borderColor='var(--border)';
+    var file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadAnalysisImg(file, div);
+  };
+  imgArea.onclick = function() { fileInput.click(); };
+
+  if (base64) {
+    var img = document.createElement('img');
+    img.src = base64;
+    img.style.cssText = 'width:100%;height:120px;object-fit:cover';
+    div.dataset.base64 = base64;
+    imgArea.appendChild(img);
+  } else {
+    imgArea.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:12px"><div style="font-size:28px;margin-bottom:6px">📸</div><div>クリック or ドロップ</div></div>';
+  }
+
+  var fileInput = document.createElement('input');
+  fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.style.display = 'none';
+  fileInput.onchange = function() { if (this.files[0]) loadAnalysisImg(this.files[0], div); };
+
+  var footer = document.createElement('div');
+  footer.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;border-top:1px solid var(--border);background:var(--surface)';
+  var lbl = document.createElement('input');
+  lbl.className = 'analysis-label';
+  lbl.value = slotLabel;
+  lbl.placeholder = '例：セットアップ';
+  lbl.style.cssText = 'flex:1;background:transparent;border:none;color:var(--text);font-size:11px;outline:none';
+  var rmBtn = document.createElement('button');
+  rmBtn.textContent = '×';
+  rmBtn.className = 'btn btn-sm btn-danger';
+  rmBtn.style.cssText = 'font-size:11px;padding:2px 8px';
+  rmBtn.onclick = function() { div.remove(); };
+  footer.appendChild(lbl);
+  footer.appendChild(rmBtn);
+
+  div.appendChild(imgArea);
+  div.appendChild(fileInput);
+  div.appendChild(footer);
+  container.appendChild(div);
+}
+
+function loadAnalysisImg(file, div) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    div.dataset.base64 = e.target.result;
+    var imgArea = div.querySelector('div');
+    imgArea.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:120px;object-fit:cover">';
+    div.style.borderColor = 'var(--accent)';
+    setTimeout(function() { div.style.borderColor = 'var(--border)'; }, 600);
+  };
+  reader.readAsDataURL(file);
+}
+
+function getAnalysisImgs() {
+  var slots = document.querySelectorAll('.analysis-img-slot');
+  var result = [];
+  slots.forEach(function(slot) {
+    if (slot.dataset.base64) {
+      var label = slot.querySelector('.analysis-label');
+      result.push({ base64: slot.dataset.base64, label: label ? label.value.trim() : '' });
+    }
+  });
+  return result;
+}
+
+// ===== 解析用スクリーンショット管理 =====
+function addAnalysisImgSlot(base64, label) {
+  var container = document.getElementById('analysis-img-slots');
+  if (!container) return;
+  var idx = container.children.length;
+  var slotLabel = label || ('\u30b9\u30af\u30b7\u30e7 ' + (idx + 1));
+  var div = document.createElement('div');
+  div.className = 'analysis-img-slot';
+  div.style.cssText = 'border:2px dashed var(--border);border-radius:8px;overflow:hidden;background:var(--surface2);position:relative;display:flex;flex-direction:column;min-height:160px';
+
+  var imgArea = document.createElement('div');
+  imgArea.style.cssText = 'flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:110px;overflow:hidden';
+  imgArea.ondragover = function(e) { e.preventDefault(); div.style.borderColor='var(--accent)'; };
+  imgArea.ondragleave = function() { div.style.borderColor='var(--border)'; };
+  imgArea.ondrop = function(e) {
+    e.preventDefault(); div.style.borderColor='var(--border)';
+    var file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadAnalysisImgFile(file, div, imgArea);
+  };
+  imgArea.onclick = function() { fi.click(); };
+
+  if (base64) {
+    div.dataset.base64 = base64;
+    imgArea.innerHTML = '<img src="' + base64 + '" style="width:100%;height:110px;object-fit:cover">';
+  } else {
+    imgArea.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:12px"><div style="font-size:28px;margin-bottom:4px">\ud83d\udcf8</div><div>\u30af\u30ea\u30c3\u30af or \u30c9\u30ed\u30c3\u30d7</div></div>';
+  }
+
+  var fi = document.createElement('input');
+  fi.type = 'file'; fi.accept = 'image/*'; fi.style.display = 'none';
+  fi.onchange = function() { if (this.files[0]) loadAnalysisImgFile(this.files[0], div, imgArea); };
+
+  var footer = document.createElement('div');
+  footer.style.cssText = 'display:flex;align-items:center;gap:4px;padding:6px 8px;border-top:1px solid var(--border);background:var(--surface)';
+  var lbl = document.createElement('input');
+  lbl.className = 'analysis-label';
+  lbl.value = slotLabel;
+  lbl.placeholder = '例：セットアップ';
+  lbl.style.cssText = 'flex:1;background:transparent;border:none;color:var(--text);font-size:11px;outline:none';
+  var rmBtn = document.createElement('button');
+  rmBtn.textContent = '×';
+  rmBtn.className = 'btn btn-sm btn-danger';
+  rmBtn.style.cssText = 'font-size:11px;padding:2px 8px';
+  rmBtn.onclick = function() { div.remove(); };
+  footer.appendChild(lbl);
+  footer.appendChild(rmBtn);
+
+  div.appendChild(imgArea);
+  div.appendChild(fi);
+  div.appendChild(footer);
+  container.appendChild(div);
+}
+
+function loadAnalysisImgFile(file, div, imgArea) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    div.dataset.base64 = e.target.result;
+    imgArea.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:110px;object-fit:cover">';
+  };
+  reader.readAsDataURL(file);
+}
+
+function getAnalysisImgs() {
+  var slots = document.querySelectorAll('.analysis-img-slot');
+  var result = [];
+  slots.forEach(function(slot) {
+    if (slot.dataset.base64) {
+      var label = slot.querySelector('.analysis-label');
+      result.push({ base64: slot.dataset.base64, label: label ? label.value.trim() : '' });
+    }
+  });
+  return result;
+}
+
+
 // ===== サイズ表画像アップロード =====
 var sizeImgDataList = []; // [{base64, name}]
 
@@ -1924,14 +2087,43 @@ function addSizeImgSlot() {
   var container = document.getElementById('size-img-slots');
   var div = document.createElement('div');
   div.className = 'size-img-slot';
-  div.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px';
-  div.innerHTML = '<div class="size-img-drop" onclick="triggerSizeImgInput(this)" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent2)\'" ondragleave="this.style.borderColor=\'var(--border)\'" ondrop="handleSizeImgDrop(event,this)" style="width:72px;height:72px;border:2px dashed var(--border);border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;overflow:hidden;font-size:22px;color:var(--muted);transition:border-color 0.15s">📐</div>'
-    + '<input type="file" accept="image/*" style="display:none" onchange="handleSizeImgFileInput(this)">'
-    + '<div style="flex:1"><div class="size-img-label" style="font-size:12px;color:var(--muted)">クリックまたはドロップで画像をアップロード</div>'
-    + '<div style="display:flex;gap:6px;margin-top:6px">'
-    + '<button onclick="runSizeImgOCR(this)" class="btn btn-sm" style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px">🔍 読み取り</button>'
-    + '<button onclick="removeSizeImgSlot(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button>'
-    + '</div></div>';
+  div.style.cssText = 'border:2px dashed var(--border);border-radius:8px;overflow:hidden;background:var(--surface2);display:flex;flex-direction:column;min-height:160px';
+
+  var dropEl = document.createElement('div');
+  dropEl.className = 'size-img-drop';
+  dropEl.style.cssText = 'flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:110px;overflow:hidden;font-size:24px;color:var(--muted);transition:border-color 0.15s';
+  dropEl.textContent = '📐';
+  dropEl.onclick = function() { fi.click(); };
+  dropEl.ondragover = function(e) { e.preventDefault(); div.style.borderColor='var(--accent2)'; };
+  dropEl.ondragleave = function() { div.style.borderColor='var(--border)'; };
+  dropEl.ondrop = function(e) {
+    e.preventDefault(); div.style.borderColor='var(--border)';
+    var file = e.dataTransfer.files[0];
+    if (file) loadSizeImgToSlot(file, div.querySelector('.size-img-slot') || div);
+  };
+
+  var fi = document.createElement('input');
+  fi.type = 'file'; fi.accept = 'image/*'; fi.style.display = 'none';
+  fi.onchange = function() { if (this.files[0]) loadSizeImgToSlot(this.files[0], div); };
+
+  var footer = document.createElement('div');
+  footer.style.cssText = 'padding:6px 8px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:6px;align-items:center';
+  var readBtn = document.createElement('button');
+  readBtn.textContent = '🔍 読み取り';
+  readBtn.className = 'btn btn-sm';
+  readBtn.style.cssText = 'background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px;flex:1';
+  readBtn.onclick = function() { runSizeImgOCR(readBtn); };
+  var delBtn = document.createElement('button');
+  delBtn.textContent = '✕';
+  delBtn.className = 'btn btn-sm btn-danger';
+  delBtn.style.cssText = 'font-size:11px';
+  delBtn.onclick = function() { div.remove(); };
+  footer.appendChild(readBtn);
+  footer.appendChild(delBtn);
+
+  div.appendChild(dropEl);
+  div.appendChild(fi);
+  div.appendChild(footer);
   container.appendChild(div);
 }
 
@@ -1964,8 +2156,10 @@ function loadSizeImgToSlot(file, slot) {
   reader.onload = function(e) {
     var base64 = e.target.result;
     var dropEl = slot.querySelector('.size-img-drop');
-    dropEl.innerHTML = '<img src="' + base64 + '" style="width:100%;height:100%;object-fit:cover">';
-    dropEl.dataset.base64 = base64;
+    if (dropEl) {
+      dropEl.innerHTML = '<img src="' + base64 + '" style="width:100%;height:110px;object-fit:cover">';
+      dropEl.dataset.base64 = base64;
+    }
     var label = slot.querySelector('.size-img-label');
     if (label) label.textContent = file.name;
   };
@@ -2074,6 +2268,9 @@ function resetAIPanel() {
   aiProductData = {};
   ocrSizeTable = null;
   clearProductImg();
+  // 解析用スクショをリセット
+  var analysisSlots = document.getElementById('analysis-img-slots');
+  if (analysisSlots) analysisSlots.innerHTML = '';
   document.getElementById("size-img-slots").innerHTML = '<div class="size-img-slot" style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><div class="size-img-drop" onclick="triggerSizeImgInput(this)" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent2)\'" ondragleave="this.style.borderColor=\'var(--border)\'" ondrop="handleSizeImgDrop(event,this)" style="width:72px;height:72px;border:2px dashed var(--border);border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;overflow:hidden;font-size:22px;color:var(--muted);transition:border-color 0.15s">📐</div><input type="file" accept="image/*" style="display:none" onchange="handleSizeImgFileInput(this)"><div style="flex:1"><div class="size-img-label" style="font-size:12px;color:var(--muted)">クリックまたはドロップで画像をアップロード</div><div style="display:flex;gap:6px;margin-top:6px"><button onclick="runSizeImgOCR(this)" class="btn btn-sm" style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px">🔍 読み取り</button><button onclick="removeSizeImgSlot(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button></div></div></div>';
 }
 
@@ -2088,82 +2285,88 @@ const SIZE_CN_TO_JP = {
 
 // ---- メイン解析 ----
 async function analyzeProduct() {
-  const url      = document.getElementById('ai-url').value.trim();
-  const pageText = document.getElementById('ai-pagetext').value.trim();
-  const hasImage = !!productImgBase64;
+  const url        = document.getElementById('ai-url').value.trim();
+  const pageText   = document.getElementById('ai-pagetext').value.trim();
+  const analysisImgList = getAnalysisImgs();
+  const hasAnalysisImgs = analysisImgList.length > 0;
 
-  if (!url && !pageText && !hasImage) {
-    showAIError('スクリーンショット・URL・テキストのいずれかを入力してください');
+  if (!url && !pageText && !hasAnalysisImgs) {
+    showAIError('解析用スクリーンショット・URL・テキストのいずれかを入力してください');
     return;
   }
 
   setAILoading(true, 'AIが商品情報を解析中...');
 
+  // JSONスキーマ（バリアントごとに price_cny を持つ）
   const jsonSchema = `{
-  "name_cn": "中国語の商品名（ページタイトルから抽出）",
-  "name_jp": "日本メンズアパレルECサイト向け商品名（必須・15〜25文字・魅力的で具体的）",
-  "price_cny": 仕入れ価格の数値（元・割引後の券后价を優先。なければ0）,
-  "variants": [{"name": "バリアント名（日本語）", "name_cn": "中国語元名", "price_cny": 0}],
-  "colors": [{"cn": "中国語カラー名", "jp": "日本語カタカナ名"}],
+  "name_cn": "中国語の商品名",
+  "name_jp": "日本メンズアパレルECサイト向け商品名（15〜25文字）",
+  "price_cny": メイン仕入れ価格（元・数値のみ）,
+  "variants": [
+    {"name": "セットアップ", "name_cn": "西装+裤子", "price_cny": 297},
+    {"name": "ジャケット単体", "name_cn": "一件西装", "price_cny": 206}
+  ],
+  "colors": [{"cn": "黒色", "jp": "ブラック"}],
   "sizes_cn": ["M", "L", "XL"],
   "size_table": [],
-  "description": "商品の特徴・素材・スタイルを日本語で50文字以内",
+  "description": "特徴を日本語50文字以内",
   "category": "トップス/パンツ/アウター/シューズ/アクセサリー/その他"
 }`;
 
-  const variantNote = `バリアント抽出ルール（最重要）:
-- 颜色（カラー）欄に「西装+裤子」「一件西装」のような【商品の種類の違い】があれば variants に分ける
-- 「黒色」「白色」のような【色の違いだけ】は variants ではなく colors に入れる
-- バリアントの例: セットアップ（西装+裤子）、ジャケット単体（一件西装）、パンツ単体（裤子）など
-- バリアントがない場合は variants を空配列にする
-- バリアント名は日本語で自然な名前にする`;
+  const variantRule = `【バリアント判定ルール】
+- 颜色欄に「西装+裤子」「一件西装」のような商品種類の違い → variants に分けて各 price_cny を設定
+- 「黒色」「白色」など色の違いのみ → colors に入れ variants は空配列
+- variants の price_cny は各スクショに表示されている券后¥の価格から読み取る
+- バリアントがなければ variants は空配列`;
 
-  let prompt;
-  if (hasImage) {
-    prompt = `あなたはタオバオ商品ページの解析専門家です。
-この画像はタオバオの商品詳細ページのスクリーンショットです。
-画像から以下の情報を正確に読み取ってください：
+  try {
+    let rawText;
 
-1. ページ上部の商品タイトル（中国語）
-2. 券后¥または优惠前の価格（元）
-3. 颜色（カラー/バリアント）の選択肢 ← 特に重要
-4. 尺码（サイズ）の選択肢
+    if (hasAnalysisImgs) {
+      // 複数スクショ → 1枚目で全体解析、複数枚あれば価格を各スクショから補完
+      const firstImg = analysisImgList[0];
+      const b64first = firstImg.base64.split(',')[1];
+      const mtypeFirst = firstImg.base64.split(';')[0].split(':')[1];
 
+      let msgContent = [
+        { type: 'image', source: { type: 'base64', media_type: mtypeFirst, data: b64first } },
+      ];
+
+      // 2枚目以降も追加（バリアント別価格のため）
+      for (var i = 1; i < analysisImgList.length; i++) {
+        var img = analysisImgList[i];
+        msgContent.push({
+          type: 'image',
+          source: { type: 'base64', media_type: img.base64.split(';')[0].split(':')[1], data: img.base64.split(',')[1] }
+        });
+      }
+
+      var imgDesc = analysisImgList.map(function(img, idx) {
+        return '画像' + (idx+1) + ': ' + (img.label || 'スクショ'+(idx+1));
+      }).join(', ');
+
+      msgContent.push({ type: 'text', text: `タオバオ商品詳細ページのスクリーンショットです（${imgDesc}）。
+各画像から情報を読み取り、バリアントごとの価格を正確に抽出してください。
 ${url ? 'URL: ' + url : ''}
 ${pageText ? '補足テキスト:\n' + pageText.slice(0, 3000) : ''}
 
-${variantNote}
+${variantRule}
 
 以下のJSON形式のみで回答（前後に何も書かない、コードブロックなし）:
-${jsonSchema}`;
-  } else {
-    prompt = `あなたはタオバオ商品情報の専門家です。以下の情報から商品データを抽出・生成してください。
+${jsonSchema}` });
 
-URL: ${url || '（未入力）'}
-
-商品ページテキスト:
-${pageText ? pageText.slice(0, 12000) : '（未入力）'}
-
-${variantNote}
-
-以下のJSON形式のみで回答（前後に何も書かない、コードブロックなし）:
-${jsonSchema}`;
-  }
-
-  try {
-    var claudeMessages;
-    if (hasImage) {
-      var b64data = productImgBase64.split(',')[1];
-      var mtype   = productImgBase64.split(';')[0].split(':')[1];
-      claudeMessages = [{ role: 'user', content: [
-        { type: 'image', source: { type: 'base64', media_type: mtype, data: b64data } },
-        { type: 'text', text: prompt }
-      ]}];
+      rawText = await callClaude([{ role: 'user', content: msgContent }], 2000);
     } else {
-      claudeMessages = [{ role: 'user', content: prompt }];
-    }
+      rawText = await callClaude([{ role: 'user', content:
+        `タオバオ商品情報から商品データを抽出してください。
+URL: ${url || '（未入力）'}
+テキスト:\n${pageText ? pageText.slice(0, 12000) : '（未入力）'}
 
-    const rawText = await callClaude(claudeMessages, 2000);
+${variantRule}
+
+以下のJSON形式のみで回答（前後に何も書かない、コードブロックなし）:
+${jsonSchema}` }], 2000);
+    }
 
     let parsed;
     try {
@@ -2181,8 +2384,8 @@ ${jsonSchema}`;
       parsed.size_table = ocrSizeTable;
     }
 
-    // アップロード画像をそのまま商品画像として使用
-    if (hasImage) parsed.image_url = productImgBase64;
+    // サムネイル画像
+    if (productImgBase64) parsed.image_url = productImgBase64;
 
     aiProductData = { ...parsed, url };
     setAILoading(false);
@@ -3199,8 +3402,14 @@ updateLabels();
 updateApiKeyStatus();
 const today = new Date().toISOString().split('T')[0];
 document.getElementById('o-date').value = today;
+// 解析用スクショ初期スロット
+addAnalysisImgSlot();
+addAnalysisImgSlot();
+// サイズ表初期スロット
+addSizeImgSlot();
 document.getElementById('e-date').value = today;
 document.getElementById('r-date').value = today;
+addAnalysisImgSlot(); addAnalysisImgSlot(); addSizeImgSlot();
 loadFromDB();
 </script>
 </body>
