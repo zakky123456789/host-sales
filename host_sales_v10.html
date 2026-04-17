@@ -2091,15 +2091,15 @@ function addSizeImgSlot() {
 
   var dropEl = document.createElement('div');
   dropEl.className = 'size-img-drop';
-  dropEl.style.cssText = 'flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:110px;overflow:hidden;font-size:24px;color:var(--muted);transition:border-color 0.15s';
-  dropEl.textContent = '📐';
+  dropEl.style.cssText = 'flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;font-size:24px;color:var(--muted);transition:border-color 0.15s;min-height:130px';
+  dropEl.innerHTML = '<div style="text-align:center"><div style="font-size:32px;margin-bottom:6px">📐</div><div style="font-size:11px;color:var(--muted)">クリック or ドロップ</div></div>';
   dropEl.onclick = function() { fi.click(); };
   dropEl.ondragover = function(e) { e.preventDefault(); div.style.borderColor='var(--accent2)'; };
   dropEl.ondragleave = function() { div.style.borderColor='var(--border)'; };
   dropEl.ondrop = function(e) {
     e.preventDefault(); div.style.borderColor='var(--border)';
     var file = e.dataTransfer.files[0];
-    if (file) loadSizeImgToSlot(file, div.querySelector('.size-img-slot') || div);
+    if (file) loadSizeImgToSlot(file, div);
   };
 
   var fi = document.createElement('input');
@@ -2107,18 +2107,17 @@ function addSizeImgSlot() {
   fi.onchange = function() { if (this.files[0]) loadSizeImgToSlot(this.files[0], div); };
 
   var footer = document.createElement('div');
-  footer.style.cssText = 'padding:6px 8px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:6px;align-items:center';
-  var readBtn = document.createElement('button');
-  readBtn.textContent = '🔍 読み取り';
-  readBtn.className = 'btn btn-sm';
-  readBtn.style.cssText = 'background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px;flex:1';
-  readBtn.onclick = function() { runSizeImgOCR(readBtn); };
+  footer.style.cssText = 'padding:5px 8px;border-top:1px solid var(--border);background:var(--surface);display:flex;justify-content:space-between;align-items:center';
+  var label = document.createElement('span');
+  label.className = 'size-img-label';
+  label.style.cssText = 'font-size:11px;color:var(--muted)';
+  label.textContent = 'AI解析時に自動読み取り';
   var delBtn = document.createElement('button');
   delBtn.textContent = '✕';
   delBtn.className = 'btn btn-sm btn-danger';
-  delBtn.style.cssText = 'font-size:11px';
+  delBtn.style.cssText = 'font-size:11px;padding:2px 8px';
   delBtn.onclick = function() { div.remove(); };
-  footer.appendChild(readBtn);
+  footer.appendChild(label);
   footer.appendChild(delBtn);
 
   div.appendChild(dropEl);
@@ -2235,7 +2234,17 @@ async function runSizeImgOCR(btn) {
   }
 }
 
-// 後方互換（旧runImgOCR呼び出しがあった場合のフォールバック）
+// サイズ表画像を全スロットから収集
+function getSizeImgs() {
+  var slots = document.querySelectorAll('.size-img-slot');
+  var result = [];
+  slots.forEach(function(slot) {
+    var dropEl = slot.querySelector('.size-img-drop');
+    if (dropEl && dropEl.dataset.base64) result.push(dropEl.dataset.base64);
+  });
+  return result;
+}
+// 後方互換
 function addImgUrlField() { addSizeImgSlot(); }
 
 function setAILoading(show, msg) {
@@ -2271,7 +2280,8 @@ function resetAIPanel() {
   // 解析用スクショをリセット
   var analysisSlots = document.getElementById('analysis-img-slots');
   if (analysisSlots) analysisSlots.innerHTML = '';
-  document.getElementById("size-img-slots").innerHTML = '<div class="size-img-slot" style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><div class="size-img-drop" onclick="triggerSizeImgInput(this)" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent2)\'" ondragleave="this.style.borderColor=\'var(--border)\'" ondrop="handleSizeImgDrop(event,this)" style="width:72px;height:72px;border:2px dashed var(--border);border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;overflow:hidden;font-size:22px;color:var(--muted);transition:border-color 0.15s">📐</div><input type="file" accept="image/*" style="display:none" onchange="handleSizeImgFileInput(this)"><div style="flex:1"><div class="size-img-label" style="font-size:12px;color:var(--muted)">クリックまたはドロップで画像をアップロード</div><div style="display:flex;gap:6px;margin-top:6px"><button onclick="runSizeImgOCR(this)" class="btn btn-sm" style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);color:var(--accent2);font-size:11px">🔍 読み取り</button><button onclick="removeSizeImgSlot(this)" class="btn btn-sm btn-danger" style="font-size:11px">✕</button></div></div></div>';
+  var sizeSlots = document.getElementById("size-img-slots");
+  if (sizeSlots) { sizeSlots.innerHTML = ""; addSizeImgSlot(); }
 }
 
 // サイズ換算テーブル
@@ -2340,13 +2350,23 @@ async function analyzeProduct() {
           source: { type: 'base64', media_type: img.base64.split(';')[0].split(':')[1], data: img.base64.split(',')[1] }
         });
       }
+      // サイズ表画像も追加
+      var sizeImgs = getSizeImgs();
+      sizeImgs.forEach(function(b64) {
+        msgContent.push({ type: 'image', source: { type: 'base64', media_type: b64.split(';')[0].split(':')[1], data: b64.split(',')[1] } });
+      });
+      if (sizeImgs.length > 0) {
+        var sizeNote = sizeImgs.length + '枚のサイズ表画像も添付しました。サイズ表のデータを size_table に正確に入れてください。';
+      } else {
+        var sizeNote = '';
+      }
 
       var imgDesc = analysisImgList.map(function(img, idx) {
         return '画像' + (idx+1) + ': ' + (img.label || 'スクショ'+(idx+1));
       }).join(', ');
 
       msgContent.push({ type: 'text', text: `タオバオ商品詳細ページのスクリーンショットです（${imgDesc}）。
-各画像から情報を読み取り、バリアントごとの価格を正確に抽出してください。
+各画像から情報を読み取り、バリアントごとの価格を正確に抽出してください。${sizeNote ? ' ' + sizeNote : ''}
 ${url ? 'URL: ' + url : ''}
 ${pageText ? '補足テキスト:\n' + pageText.slice(0, 3000) : ''}
 
@@ -2357,6 +2377,15 @@ ${jsonSchema}` });
 
       rawText = await callClaude([{ role: 'user', content: msgContent }], 2000);
     } else {
+      var sizeImgsText = getSizeImgs();
+      if (sizeImgsText.length > 0) {
+        var txtMsgContent = [];
+        sizeImgsText.forEach(function(b64) {
+          txtMsgContent.push({ type: 'image', source: { type: 'base64', media_type: b64.split(';')[0].split(':')[1], data: b64.split(',')[1] } });
+        });
+        txtMsgContent.push({ type: 'text', text: 'URL: ' + (url||'') + '\nテキスト:\n' + (pageText ? pageText.slice(0,12000) : '') + '\n\n' + variantRule + '\n\nサイズ表画像も添付しました。以下のJSON形式のみで回答:\n' + jsonSchema });
+        rawText = await callClaude([{ role: 'user', content: txtMsgContent }], 2000);
+      } else {
       rawText = await callClaude([{ role: 'user', content:
         `タオバオ商品情報から商品データを抽出してください。
 URL: ${url || '（未入力）'}
@@ -2366,6 +2395,7 @@ ${variantRule}
 
 以下のJSON形式のみで回答（前後に何も書かない、コードブロックなし）:
 ${jsonSchema}` }], 2000);
+      }
     }
 
     let parsed;
